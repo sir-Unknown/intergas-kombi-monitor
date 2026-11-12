@@ -26,8 +26,8 @@ Notatie: bytes worden 0-geïndexeerd genoemd. "LE16" = 16-bit little-endian (lag
 | Schrijfcommando's | Geen antwoord verwacht; IDS wacht 0,1 s | IDS `Get_serialdata(..., expect_return=0)` |
 
 Ter vergelijking: de **X-lijn** (Xtreme, Xclusive; branderautomaat "ICX") gebruikt een XOR-checksum
-over commando en antwoord (IDS X Range 1.05, `cable_interface_icx`). Dat is wat de huidige
-firmware in deze repository implementeert.
+over commando en antwoord (IDS X Range 1.05, `cable_interface_icx`). Dat is wat de Xtreme-firmware
+in `backup/xtreme` implementeert.
 
 ## 2. Herkenning van de branderautomaat
 
@@ -35,8 +35,9 @@ IDS bepaalt het type uit het `REV`-antwoord (`statistics.pyo`):
 
 - **IC3** als de hardware-release met `ic3` begint (voorbeelden: `ic3mk1   *P130213*`,
   `ic3mk2   *P131024*`); anders IC2 (voorbeeld `ic2kknl01*P100331*`).
-- Softwareversie = tekst na `V` (bijv. `V1.84`, `V3.70`). IC2-versies zijn numeriek hoger (2.x/3.x)
-  dan IC3-versies (1.x); drempels in IDS gelden daarom per type.
+- Softwareversie = tekst vanaf `V`: **4 tekens** (`V2.5`), of 5 tekens (`V1.84`, `V3.70`) als het
+  getal boven 3 ligt of het antwoord `ic3` bevat. Een IC2 met `V2.53` telt in IDS dus als 2.5.
+  IC2-versies zijn numeriek hoger (2.x/3.x) dan IC3-versies (1.x); drempels gelden daarom per type.
 
 | Functie | Voorwaarde in IDS |
 |---|---|
@@ -151,7 +152,7 @@ S1 = 53,71, S2 = 29,00 → (53,71 + 2·29,00)/3 = 37,24; gemeten `temp_flow` = 3
 | 18 | `OT_therm_prod_version` | u8 | |
 | 19 | `OT_therm_prod_type` | u8 | |
 
-Deze indeling is gelijk aan die in `process_status_extra` van de huidige Xtreme-code, op `pump_pwm`
+Deze indeling is gelijk aan die in `process_status_extra` van de Xtreme-code (backup), op `pump_pwm`
 (byte 2) en de OT-id's na.
 
 ## 6. Bedrijfsuren en tellers `HN` (32 bytes)
@@ -175,7 +176,7 @@ Bytes 0–15: acht LE16-tellers (alle varianten):
 | B | IC3, software < 1.83 | Gasmeter CV = LE32 bytes 16–19 / 10000; gasmeter WW = LE32 bytes 20–23 / 10000; uren += byte 30 × 65536; branderstarts += byte 31 × 65536 |
 | C | IC3, software ≥ 1.83 | Als B, plus watermeter = bytes 24, 25, 28 (LE24) / 10000; tapwater-branderstarts = bytes 26, 27, 29 (LE24) |
 
-Variant C is identiek aan wat de huidige Xtreme-code met `H0` doet (`process_runtime_stats`).
+Variant C is identiek aan wat de Xtreme-code (backup) met `H0` doet (`process_runtime_stats`).
 Eenheid gasmeter/watermeter staat niet in IDS (vermoedelijk m³).
 
 ## 7. Storingshistorie `EN` (32 bytes)

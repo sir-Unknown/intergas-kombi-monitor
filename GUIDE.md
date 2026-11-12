@@ -10,6 +10,12 @@ a piece of perfboard (a prototyping PCB board: stripless, 2.54 mm grid). It was 
 **Intergas Xtreme 30** with a generic ESP32-WROOM-32 dev board and ESPHome 2026.9, and that
 build works.
 
+**Intergas Kombi Kompakt HRE:** the adapter is the same, but the boiler connector is **X5** and
+the IDS protocol differs (no checksum, 32-byte replies). Read
+[docs/hre/hardware.md](./docs/hre/hardware.md) before connecting, and use
+[docs/hre/intergas-hre-probe.yaml](./docs/hre/intergas-hre-probe.yaml) instead of the Xtreme test
+below.
+
 Nothing here is supported by Intergas. A wiring mistake on the boiler side can damage the
 boiler's control board, so take the checks seriously.
 
@@ -328,7 +334,7 @@ Each request should now get a 33-byte reply (32 data bytes plus a checksum):
 ```
 
 Temperatures are 2-byte values, low byte first, divided by 100 (see `getTemp()` in
-[IntergasXtremeMonitor.cpp](./esphome/IntergasXtremeMonitor.cpp)). In the example: bytes 0-1
+[IntergasXtremeMonitor.cpp](./backup/xtreme/esphome/IntergasXtremeMonitor.cpp)). In the example: bytes 0-1
 `9B 09` = 0x099B = 24.59 °C heat exchanger, bytes 12-13 `A0 00` = 1.60 bar, byte 24 `7E` (126) =
 central heating idle, and `14 EC` (-51.00) means "no sensor fitted".
 
@@ -338,15 +344,19 @@ checks above.
 
 ## Software, step 2: the full firmware
 
-Once the replies come in, follow [SW Installation](./README.md#sw-installation) in the README.
-Because the test configuration uses the same device name and secret names, the ESPHome dashboard
-can install the full firmware over Wi-Fi; otherwise install it by USB the first time.
+Once the replies come in, install the full firmware. The [README](./README.md#sw-installation)
+describes the HRE firmware; the Xtreme firmware is kept in
+[backup/xtreme/esphome](./backup/xtreme/esphome/). Because the test configuration uses the same
+secret names, the ESPHome dashboard can install the full firmware over Wi-Fi; otherwise install it
+by USB the first time.
 
 ## The optional part of the schematic
 
 The block marked "Optional" adds three DS18B20 one-wire temperature sensors, for example on the
 heating flow and return pipes. They have nothing to do with the boiler connection and live on the **ESP side**:
 the sensors share one bus: each sensor's VDD to ESP 3V3, GND to ESP GND and DQ (data) to
-**GPIO27**, with a single 4.7 kΩ resistor between DQ and 3V3. Enable them in the `dallas_temp` section of
-[intergas-xtreme-monitor.yaml](./esphome/intergas-xtreme-monitor.yaml). Skip it if you only want
-the boiler data.
+**GPIO27**, with a single 4.7 kΩ resistor between DQ and 3V3. Enable them in the commented
+one-wire block at the end of [intergas-hre-monitor.yaml](./esphome/intergas-hre-monitor.yaml)
+(Xtreme: the `dallas_temp` section of
+[intergas-xtreme-monitor.yaml](./backup/xtreme/esphome/intergas-xtreme-monitor.yaml)). Skip it if
+you only want the boiler data.

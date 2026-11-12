@@ -1,9 +1,10 @@
 # Intergas Kombi Kompakt HRE — analyse IDS-ondersteuning
 
-Deze map bevat de analyse of, en hoe, deze repository (geschreven voor de Intergas **Xtreme**)
-geschikt gemaakt kan worden voor de Intergas **Kombi Kompakt HRE** (24/18 A, 28/24 A, 36/30 A,
-36/48 A). Er is in deze analyse **geen firmwarecode gewijzigd**; alleen documentatie en een
-read-only testconfiguratie zijn toegevoegd.
+Deze map bevat de analyse van het IDS-protocol van de Intergas **Kombi Kompakt HRE** (24/18 A,
+28/24 A, 36/30 A, 36/48 A) en de onderbouwing van de HRE-firmware in
+[esphome/intergas-hre-monitor.yaml](../../esphome/intergas-hre-monitor.yaml) en
+[esphome/hre_ids.h](../../esphome/hre_ids.h). De oorspronkelijke firmware voor de Intergas
+**Xtreme** staat ongewijzigd in [backup/xtreme](../../backup/xtreme/esphome/).
 
 Analysedatum: november 2026.
 
@@ -11,13 +12,13 @@ Analysedatum: november 2026.
 
 | Onderwerp | Conclusie | Zekerheid |
 |---|---|---|
-| Huidige firmware op een HRE | **Niet gebruiken.** Ander protocol (checksum), andere commando's, andere byte-indeling, andere parameteradressen; schrijfacties komen op verkeerde parameters terecht. | Hoog (IDS-broncode vs. repo-code) |
+| Xtreme-firmware op een HRE | **Niet gebruiken.** Ander protocol (checksum), andere commando's, andere byte-indeling, andere parameteradressen; schrijfacties komen op verkeerde parameters terecht. | Hoog (IDS-broncode vs. Xtreme-code) |
 | Adapter (GUIDE.md) | Schakeling is bruikbaar, mits de signaalspanning op X5 vooraf gemeten wordt. | Middel; meting nodig |
 | Aansluiting | **X5** ("Computer interface") i.p.v. X14; zelfde Molex Mini-Fit Jr 2×2. | Hoog |
 | Protocol | IDS-protocol **zonder checksum**, 9600 8N1, 32-byte antwoorden. Volledig vastgesteld uit de officiële Intergas Diagnostic Software (IDS) v1.83. | Hoog |
 | Parameters | Alle installateursparameters uit de handleiding staan in `V?` (0–30) en `V1` (32–63), met namen uit IDS. | Hoog |
 | Schrijven | `P` + positie + waarde (3 bytes, geen antwoord). | Hoog (IDS) / middel (praktijk: één gebruiker) |
-| Werk | Gedeelde transportlaag + HRE-decoders; Xtreme-decoders voor `S2` en (IC3) `HN` zijn herbruikbaar. | — |
+| Firmware | Aparte, HRE-specifieke implementatie zonder gedeelde code met de Xtreme; alleen lezen. Status in [implementatieplan.md](./implementatieplan.md). | — |
 
 ## Documenten
 
@@ -25,9 +26,10 @@ Analysedatum: november 2026.
 |---|---|
 | [protocol.md](./protocol.md) | Volledige protocolbeschrijving: commando's, byte-indeling, parameters, bedrijfscodes, gevaarlijke commando's |
 | [hardware.md](./hardware.md) | X5-aansluiting, pinout, signaalniveaus, metingen vóór aansluiten, adapterberekening |
-| [verschillen-xtreme.md](./verschillen-xtreme.md) | Concrete afwijkingen tussen de huidige code en de HRE, met regelverwijzingen |
+| [verschillen-xtreme.md](./verschillen-xtreme.md) | Concrete afwijkingen tussen de Xtreme-code (backup) en de HRE, met regelverwijzingen |
 | [onzekerheden.md](./onzekerheden.md) | Alles wat niet (volledig) vaststaat, met hoe het te verifiëren is |
 | [implementatieplan.md](./implementatieplan.md) | Werkpakketten met acceptatiecriteria en verificatieprocedure op de ketel |
+| [verificatie.md](./verificatie.md) | Controle van de firmware tegen de uitgevoerde IDS v1.83-bytecode: resultaten, gevonden fouten, bewuste verschillen |
 | [bronnen.md](./bronnen.md) | Alle gebruikte bronnen, wat eruit gehaald is, betrouwbaarheid, checksums en reproductie |
 | [intergas-hre-probe.yaml](./intergas-hre-probe.yaml) | Read-only ESPHome-testconfiguratie voor de eerste verbinding |
 

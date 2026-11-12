@@ -1,0 +1,813 @@
+# Read-only monitor for the Intergas Kombi Kompakt HRE via the IDS interface (connector X5).
+#
+# Protocol: see docs/hre/protocol.md (Intergas Diagnostic Software v1.83).
+# Every read command IDS sends over the cable is polled here. Nothing is ever written: never add
+# 'P' (write parameter), 'SL'/'Sh'/'SH'/'SQ' (burner test programs), 'W', 'N' or 'I'.
+substitutions:
+  devicename: intergas-hre-monitor
+  friendly_devicename: Intergas HRE
+
+esphome:
+  name: ${devicename}
+  friendly_name: ${friendly_devicename}
+  comment: Read-only monitor for an Intergas Kombi Kompakt HRE (IDS, connector X5)
+  includes:
+    # Path relative to the ESPHome config folder, see README "SW Installation".
+    - intergas-kombi/esphome/hre_ids.h
+
+esp32:
+  board: nodemcu-32s   # use esp32dev for a generic ESP32-WROOM-32 board
+  framework:
+    type: esp-idf
+
+# UART0 is used for logging, UART2 (GPIO16/17) for the boiler via the optocoupler adapter.
+uart:
+  - id: uart_boiler
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: 9600
+
+logger:
+  hardware_uart: UART0
+  level: DEBUG
+
+wifi:
+  ssid: !secret esphome_wifi_network_ssid
+  password: !secret esphome_wifi_network_password
+  ap:
+    ssid: ${devicename}
+    password: !secret esphome_wifi_ap_fallback_password
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret esphome_hassio_api_encryption_key
+
+ota:
+  platform: esphome
+  password: !secret esphome_hassio_ota_pw
+
+# Poll loop, one command at a time, the way IDS does it: flush the receive buffer, send the
+# command, wait, then read everything that arrived. IDS gives up after 0.2 s; 300 ms is used here.
+interval:
+  - interval: 100ms
+    then:
+      - lambda: |-
+          enum { VERSION, STATUS, STATUS2, HOURS, FAULTS, PARAMS, PARAM_31, PARAMS_EXT, INTERNALS, INFO, INFO2, COUNT };
+          struct Command { const uint8_t *data; size_t reply_len; uint32_t period_ms; uint32_t last_ms; };
+          static Command commands[COUNT] = {
+            {hre::CMD_VERSION, 32, 3600000, 0},
+            {hre::CMD_STATUS, 32, 5000, 0},
+            {hre::CMD_STATUS2, 32, 5000, 0},
+            {hre::CMD_HOURS, 32, 60000, 0},
+            {hre::CMD_FAULTS, 32, 600000, 0},
+            {hre::CMD_PARAMS, 32, 600000, 0},
+            {hre::CMD_PARAM_31, 1, 600000, 0},
+            {hre::CMD_PARAMS_EXT, 32, 600000, 0},
+            {hre::CMD_INTERNALS, 32, 3600000, 0},
+            {hre::CMD_INFO, 32, 3600000, 0},
+            {hre::CMD_INFO2, 16, 3600000, 0},
+          };
+          static sensor::Sensor *const params[hre::PARAM_COUNT] = {
+            id(hre_p00), id(hre_p01), id(hre_p02), id(hre_p03), id(hre_p04), id(hre_p05),
+            id(hre_p06), id(hre_p07), id(hre_p08), id(hre_p09), id(hre_p10), id(hre_p11),
+            id(hre_p12), id(hre_p13), id(hre_p14), id(hre_p15), id(hre_p16), id(hre_p17),
+            id(hre_p18), id(hre_p19), id(hre_p20), id(hre_p21), id(hre_p22), id(hre_p23),
+            id(hre_p24), id(hre_p25), id(hre_p26), id(hre_p27), id(hre_p28), id(hre_p29),
+            id(hre_p30)};
+          static sensor::Sensor *const ext_params[hre::EXT_PARAM_COUNT] = {
+            id(hre_p32), id(hre_p33), id(hre_p34), id(hre_p35), id(hre_p36), id(hre_p37),
+            id(hre_p38), id(hre_p39), id(hre_p40), id(hre_p41), id(hre_p42), id(hre_p43),
+            id(hre_p44), id(hre_p45), id(hre_p46), id(hre_p47), id(hre_p48), id(hre_p49),
+            id(hre_p50), id(hre_p51), id(hre_p52), id(hre_p53), id(hre_p54), id(hre_p55),
+            id(hre_p56), id(hre_p57), id(hre_p58), id(hre_p59), id(hre_p60), id(hre_p61),
+            id(hre_p62)};
+          static int pending = -1;
+          static bool have_version = false;
+          static hre::Version version;
+          static int status_failures = 0;
+
+          auto pub = [](sensor::Sensor *s, float v) {
+            if (!s->has_state() || !(s->state == v || (std::isnan(s->state) && std::isnan(v))))
+              s->publish_state(v);
+          };
+          auto pub_bin = [](binary_sensor::BinarySensor *s, bool v) {
+            if (!s->has_state() || s->state != v)
+              s->publish_state(v);
+          };
+          auto pub_text = [](text_sensor::TextSensor *s, const std::string &v) {
+            if (!s->has_state() || s->state != v)
+              s->publish_state(v);
+          };
+
+          const uint32_t now = millis();
+          uint8_t c = 0;
+
+          if (pending < 0) {
+            // Pick the first command that is due. Which commands a burner control supports
+            // follows from its version, with the same conditions as IDS.
+            int next = -1;
+            for (int i = 0; i < COUNT && next < 0; i++) {
+              bool allowed = i <= STATUS2 || have_version;
+              if (i == PARAMS)
+                allowed = allowed && hre::has_params(version);
+              if (i == PARAM_31 || i == PARAMS_EXT)
+                allowed = allowed && hre::has_ext_params(version);
+              if (i == INFO)
+                allowed = allowed && hre::has_info(version);
+              if (i == INFO2)
+                allowed = allowed && hre::has_info2(version);
+              if (allowed && (commands[i].last_ms == 0 || now - commands[i].last_ms >= commands[i].period_ms))
+                next = i;
+            }
+            if (next < 0)
+              return;
+            while (id(uart_boiler).available())
+              id(uart_boiler).read_byte(&c);
+            id(uart_boiler).write_array(commands[next].data, 3);
+            commands[next].last_ms = now;  // the period runs from the moment of sending
+            pending = next;
+            return;
+          }
+
+          if (now - commands[pending].last_ms < 300)
+            return;
+
+          uint8_t buf[hre::MAX_REPLY_LEN + 1];
+          size_t len = 0;
+          while (id(uart_boiler).available()) {
+            id(uart_boiler).read_byte(&c);
+            if (len < sizeof(buf))
+              buf[len] = c;
+            len++;
+          }
+          const int cmd = pending;
+          const size_t expected = commands[cmd].reply_len;
+          pending = -1;
+
+          // As IDS: exactly the expected length, or one byte more (then the first byte is dropped).
+          if (len != expected && len != expected + 1) {
+            ESP_LOGW("hre", "Command %c%c: %u bytes received, expected %u", commands[cmd].data[0],
+                     commands[cmd].data[1], (unsigned) len, (unsigned) expected);
+            if (cmd == VERSION)
+              commands[cmd].last_ms = now - commands[cmd].period_ms + 10000;  // retry in 10 s
+            if (cmd == STATUS && ++status_failures >= 3)
+              pub_bin(id(hre_connected), false);
+            return;
+          }
+          const uint8_t *b = len == expected + 1 ? buf + 1 : buf;
+          ESP_LOGD("hre", "Reply %c%c: %s", commands[cmd].data[0], commands[cmd].data[1],
+                   format_hex_pretty(b, expected).c_str());
+
+          switch (cmd) {
+            case VERSION: {
+              version = hre::decode_version(b);
+              have_version = true;
+              pub_text(id(hre_hardware), version.hardware);
+              pub_text(id(hre_software), version.software);
+              pub_text(id(hre_rom_checksums), version.rom_checksum1 + " " + version.rom_checksum2);
+              ESP_LOGI("hre", "Burner control %s, software %s (%s)", version.hardware.c_str(),
+                       version.software.c_str(), version.ic3 ? "IC3" : "IC2");
+              break;
+            }
+            case STATUS: {
+              const hre::Status s = hre::decode_status(b);
+              status_failures = 0;
+              pub_bin(id(hre_connected), true);
+              pub(id(hre_s1), s.s1_flow_sensor);
+              pub(id(hre_flow), s.flow);
+              pub(id(hre_return), s.s2_return);
+              pub(id(hre_dhw), s.s3_dhw);
+              pub(id(hre_s4), s.s4_boiler);
+              pub(id(hre_outside), s.s5_outside);
+              pub(id(hre_pressure), s.pressure);
+              pub(id(hre_setpoint), s.setpoint);
+              pub(id(hre_fan_set), s.fan_speed_set);
+              pub(id(hre_fan), s.fan_speed);
+              pub(id(hre_fan_pwm), s.fan_pwm);
+              pub(id(hre_ionisation_current), s.ionisation_current);
+              const char *op = hre::operating_text(s.code);
+              pub_text(id(hre_operating), op ? std::string(op) : "Code " + to_string(s.code));
+              pub_bin(id(hre_fault), s.fault_active);
+              if (s.fault_active) {
+                const char *f = hre::fault_text(s.fault_code);
+                pub_text(id(hre_fault_text), to_string(s.fault_code) + (f ? std::string(" - ") + f : ""));
+              } else {
+                pub_text(id(hre_fault_text), "Geen");
+              }
+              pub_bin(id(hre_opentherm), s.opentherm);
+              pub_bin(id(hre_roomtherm), s.roomtherm);
+              pub_bin(id(hre_tap_switch), s.tap_switch);
+              pub_bin(id(hre_gp_switch), s.gp_switch);
+              pub_bin(id(hre_pump), s.pump);
+              pub_bin(id(hre_three_way_valve), s.three_way_valve);
+              pub_bin(id(hre_gas_valve), s.gas_valve);
+              pub_bin(id(hre_spark), s.spark);
+              pub_bin(id(hre_flame), s.ionisation);
+              pub_bin(id(hre_pressure_sensor), s.pressure_sensor);
+              pub_bin(id(hre_rf_bound), s.rf_bound);
+              pub_bin(id(hre_rf_communication), s.rf_communication);
+              pub_bin(id(hre_rf_battery_info), s.rf_battery_info);
+              pub_bin(id(hre_rf_battery_ok), s.rf_battery_ok);
+              break;
+            }
+            case STATUS2: {
+              const hre::Status2 s = hre::decode_status2(b);
+              pub(id(hre_tap_flow), s.tap_flow);
+              pub(id(hre_pump_pwm), s.pump_pwm);
+              pub(id(hre_room_override), s.room_override_zone1);
+              pub(id(hre_room_setpoint), s.room_setpoint_zone1);
+              pub(id(hre_room_temperature), s.room_temperature_zone1);
+              pub(id(hre_room_override_zone2), s.room_override_zone2);
+              pub(id(hre_room_setpoint_zone2), s.room_setpoint_zone2);
+              pub(id(hre_room_temperature_zone2), s.room_temperature_zone2);
+              pub(id(hre_outside_override), s.outside_override);
+              pub_text(id(hre_ot_thermostat), "master_id: " + to_string(s.ot_master_id) + " version: " +
+                                                  to_string(s.ot_version) + " type: " + to_string(s.ot_type));
+              break;
+            }
+            case HOURS: {
+              const hre::Hours h = hre::decode_hours(b, version);
+              pub(id(hre_power_on_hours), h.power_on_hours);
+              pub(id(hre_power_cycles), h.power_cycles);
+              pub(id(hre_ch_hours), h.ch_hours);
+              pub(id(hre_dhw_hours), h.dhw_hours);
+              pub(id(hre_burner_starts), h.burner_starts);
+              pub(id(hre_ignition_failures), h.ignition_failures);
+              pub(id(hre_flame_losses), h.flame_losses);
+              pub(id(hre_resets), h.resets);
+              pub(id(hre_gas_ch), h.gas_ch);
+              pub(id(hre_gas_dhw), h.gas_dhw);
+              pub(id(hre_water), h.water);
+              pub(id(hre_dhw_burner_starts), h.dhw_burner_starts);
+              break;
+            }
+            case FAULTS: {
+              // One counter per fault code 0-31; only the codes that occurred are listed.
+              std::string text;
+              for (size_t code = 0; code < 32 && text.size() < 230; code++) {
+                const uint8_t count = hre::fault_count(b, code);
+                if (count)
+                  text += (text.empty() ? "" : ", ") + to_string(code) + ": " + to_string(count) + "x";
+              }
+              pub_text(id(hre_fault_counters), text.empty() ? "Geen" : text);
+              break;
+            }
+            case PARAMS: {
+              for (size_t i = 0; i < hre::PARAM_COUNT; i++)
+                pub(params[i], hre::param(b, i));
+              break;
+            }
+            case PARAM_31: {
+              pub(id(hre_p31), b[0]);
+              break;
+            }
+            case PARAMS_EXT: {
+              for (size_t i = 0; i < hre::EXT_PARAM_COUNT; i++)
+                pub(ext_params[i], b[i]);
+              break;
+            }
+            case INTERNALS: {
+              const hre::Internals r = hre::decode_internals(b, version);
+              pub(id(hre_interrupt_time), r.interrupt_time);
+              pub(id(hre_interrupt_load), r.interrupt_load);
+              pub(id(hre_main_load), r.main_load);
+              pub(id(hre_net_frequency), r.net_frequency);
+              pub(id(hre_voltage_reference), r.voltage_reference);
+              pub_text(id(hre_checksums), hre::hex(b + 24, 4) + " " + hre::hex(b + 28, 4));
+              break;
+            }
+            case INFO: {
+              // Bytes 0-24 hold RF/cloud pairing data (see docs/hre/protocol.md), shown raw.
+              pub_text(id(hre_production_code), hre::decode_production_code(b));
+              pub_text(id(hre_rf_info), hre::hex(b, 25));
+              break;
+            }
+            case INFO2:
+              pub_text(id(hre_rf_info2), hre::hex(b, 16));  // dongle and LAN ids of the RF module
+              break;
+          }
+
+binary_sensor:
+  - platform: template
+    id: hre_connected
+    name: Verbinding ketel
+    device_class: connectivity
+    entity_category: diagnostic
+  - platform: template
+    id: hre_fault
+    name: Storing
+    device_class: problem
+  - platform: template
+    id: hre_opentherm
+    name: OpenTherm
+  - platform: template
+    id: hre_roomtherm
+    name: Aan-uitthermostaat
+  - platform: template
+    id: hre_tap_switch
+    name: Tapschakelaar
+  - platform: template
+    id: hre_gp_switch
+    name: Ext. comfort
+  - platform: template
+    id: hre_pump
+    name: Pomp
+    device_class: running
+  - platform: template
+    id: hre_three_way_valve
+    name: Driewegklep
+  - platform: template
+    id: hre_gas_valve
+    name: Gasklep
+    device_class: opening
+  - platform: template
+    id: hre_spark
+    name: Ontsteking
+  - platform: template
+    id: hre_flame
+    name: Vlam (ionisatie)
+  - &diagnostic_bit
+    platform: template
+    id: hre_pressure_sensor
+    name: Druksensor aanwezig
+    entity_category: diagnostic
+  - <<: *diagnostic_bit
+    id: hre_rf_bound
+    name: RF-thermostaat gekoppeld
+  - <<: *diagnostic_bit
+    id: hre_rf_communication
+    name: RF-thermostaat communicatie
+  - <<: *diagnostic_bit
+    id: hre_rf_battery_info
+    name: RF-thermostaat batterij-info
+  - <<: *diagnostic_bit
+    id: hre_rf_battery_ok
+    name: RF-thermostaat batterij ok
+
+sensor:
+  - &temperature
+    platform: template
+    id: hre_s1
+    name: Aanvoersensor S1
+    unit_of_measurement: °C
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: never
+  - <<: *temperature
+    id: hre_flow
+    name: Aanvoertemperatuur
+  - <<: *temperature
+    id: hre_return
+    name: Retourtemperatuur S2
+  - <<: *temperature
+    id: hre_dhw
+    name: Warmwatertemperatuur S3
+  - <<: *temperature
+    id: hre_s4
+    name: Boilersensor S4
+  - <<: *temperature
+    id: hre_outside
+    name: Buitentemperatuur
+  - <<: *temperature
+    id: hre_setpoint
+    name: Gevraagde aanvoertemperatuur
+  - <<: *temperature
+    id: hre_room_setpoint
+    name: Kamersetpoint
+  - <<: *temperature
+    id: hre_room_temperature
+    name: Kamertemperatuur
+  - <<: *temperature
+    id: hre_room_override
+    name: Kameroverride
+  - <<: *temperature
+    id: hre_room_setpoint_zone2
+    name: Kamersetpoint zone 2
+  - <<: *temperature
+    id: hre_room_temperature_zone2
+    name: Kamertemperatuur zone 2
+  - <<: *temperature
+    id: hre_room_override_zone2
+    name: Kameroverride zone 2
+  - <<: *temperature
+    id: hre_outside_override
+    name: Buitentemperatuur override
+  - platform: template
+    id: hre_pressure
+    name: CV-waterdruk
+    unit_of_measurement: bar
+    device_class: pressure
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: never
+  - &measurement
+    platform: template
+    id: hre_fan_set
+    name: Ventilatortoerental gewenst
+    unit_of_measurement: rpm
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: never
+  - <<: *measurement
+    id: hre_fan
+    name: Ventilatortoerental
+  - <<: *measurement
+    id: hre_fan_pwm
+    name: Ventilator PWM
+    unit_of_measurement: ""
+    accuracy_decimals: 1
+  - <<: *measurement
+    id: hre_ionisation_current
+    name: Ionisatiestroom
+    unit_of_measurement: µA
+    accuracy_decimals: 2
+  - <<: *measurement
+    id: hre_tap_flow
+    name: Tapdebiet
+    unit_of_measurement: l/min   # unit not stated by IDS, see docs/hre/onzekerheden.md (O6)
+    accuracy_decimals: 2
+  - <<: *measurement
+    id: hre_pump_pwm
+    name: Pomp PWM
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+  - &counter
+    platform: template
+    id: hre_power_on_hours
+    name: Uren onder spanning
+    unit_of_measurement: h
+    state_class: total_increasing
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    update_interval: never
+  - <<: *counter
+    id: hre_ch_hours
+    name: Branduren CV
+  - <<: *counter
+    id: hre_dhw_hours
+    name: Branduren tapwater
+  - <<: *counter
+    id: hre_power_cycles
+    name: Aantal keer spanning aangesloten
+    unit_of_measurement: ""
+  - <<: *counter
+    id: hre_burner_starts
+    name: Branderstarts
+    unit_of_measurement: ""
+  - <<: *counter
+    id: hre_dhw_burner_starts
+    name: Branderstarts tapwater
+    unit_of_measurement: ""
+  - <<: *counter
+    id: hre_ignition_failures
+    name: Mislukte ontstekingen
+    unit_of_measurement: ""
+  - <<: *counter
+    id: hre_flame_losses
+    name: Vlamverlies
+    unit_of_measurement: ""
+  - <<: *counter
+    id: hre_resets
+    name: Resets
+    unit_of_measurement: ""
+  - &meter
+    platform: template
+    id: hre_gas_ch
+    name: Gasverbruik CV
+    unit_of_measurement: m³   # unit not stated by IDS, see docs/hre/onzekerheden.md (O6)
+    device_class: gas
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: never
+  - <<: *meter
+    id: hre_gas_dhw
+    name: Gasverbruik tapwater
+  - <<: *meter
+    id: hre_water
+    name: Watermeter
+    device_class: water
+  # Burner control internals ("CRC" block).
+  - &internal
+    platform: template
+    id: hre_interrupt_time
+    name: Branderautomaat interrupttijd
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    update_interval: never
+  - <<: *internal
+    id: hre_interrupt_load
+    name: Branderautomaat interruptbelasting
+    unit_of_measurement: "%"
+  - <<: *internal
+    id: hre_main_load
+    name: Branderautomaat processorbelasting
+    unit_of_measurement: "%"
+  - <<: *internal
+    id: hre_net_frequency
+    name: Netfrequentie
+    unit_of_measurement: Hz
+  - <<: *internal
+    id: hre_voltage_reference
+    name: Branderautomaat referentiespanning
+    unit_of_measurement: V
+  # Parameters "V?" (positions 0-30). Names and positions from IDS v1.83, descriptions from the
+  # installation manual §7.2. Read only.
+  - &param
+    platform: template
+    id: hre_p00
+    name: Toestel aan (HEATER_ON)
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    update_interval: never
+  - <<: *param
+    id: hre_p01
+    name: Tapcomfortstand (COMFORT_MODE)
+  - <<: *param
+    id: hre_p02
+    name: Max. CV-aanvoertemperatuur (CH_SET_MAX)
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p03
+    name: Tapwatertemperatuur (DHW_SET)
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p04
+    name: Ecodagen (ECO_DAYS, o.)
+    unit_of_measurement: "d"
+  - <<: *param
+    id: hre_p05
+    name: Comforttemperatuur (COMFORT_SET)
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p06
+    name: Tapwater nacht (DHW_AT_NIGHT)
+  - <<: *param
+    id: hre_p07
+    name: CV nacht (CH_AT_NIGHT)
+  - <<: *param
+    id: hre_p08
+    name: Parameter 1 installatietype
+  - <<: *param
+    id: hre_p09
+    name: Parameter 2 CV-pomp continu
+  - <<: *param
+    id: hre_p10
+    name: Parameter 3 max. CV-vermogen
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p11
+    name: Parameter 4 max. WW-vermogen
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p12
+    name: Parameter 5 min. aanvoertemperatuur stooklijn
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p13
+    name: Parameter 6 min. buitentemperatuur stooklijn
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p14
+    name: Parameter 7 max. buitentemperatuur stooklijn
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p15
+    name: Parameter 8 pompnadraaitijd CV
+    unit_of_measurement: "min"
+  - <<: *param
+    id: hre_p16
+    name: Parameter 9 pompnadraaitijd boiler
+    unit_of_measurement: "min"
+  - <<: *param
+    id: hre_p17
+    name: Parameter A driewegklep of afsluiter
+  - <<: *param
+    id: hre_p18
+    name: Parameter b booster
+  - <<: *param
+    id: hre_p19
+    name: Parameter C stappenmodulatie
+  - <<: *param
+    id: hre_p20
+    name: Parameter c min. toerental CV
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p21
+    name: Parameter d min. toerental WW
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p22
+    name: Parameter E min. aanvoertemperatuur OT-RF
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p23
+    name: Parameter E. reactie OT-RF-thermostaat
+  - <<: *param
+    id: hre_p24
+    name: Parameter F starttoerental CV
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p25
+    name: Parameter h max. ventilatortoerental (x100 rpm)
+  - <<: *param
+    id: hre_p26
+    name: Parameter n regeltemperatuur boilerbedrijf
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p27
+    name: Parameter o wachttijd CV na WW
+    unit_of_measurement: "min"
+  - <<: *param
+    id: hre_p28
+    name: Parameter P antipendeltijd
+    unit_of_measurement: "min"
+  - <<: *param
+    id: hre_p29
+    name: Parameter r
+  - <<: *param
+    id: hre_p30
+    name: Parameter F. starttoerental WW
+    unit_of_measurement: "%"
+  # Extended parameters (position 31 via "L", 32-62 via "V1"; IC3 only). The ones IDS only shows in
+  # its "more advanced mode" are factory internals and disabled by default in Home Assistant.
+  - <<: *param
+    id: hre_p31
+    name: IDS DHW_GRADIENT_CONTROL
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p32
+    name: IDS DHW_HOTWATER_LIMIT
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p33
+    name: IDS FANSPEED_IGNITION
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p34
+    name: IDS FAN_SLOPE_INCREASE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p35
+    name: IDS FANSPEED_POSTPURGE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p36
+    name: IDS HARDWARE_TYPE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p37
+    name: IDS BETA_CH_FLOW
+  - <<: *param
+    id: hre_p38
+    name: Parameter O. wachttijd CV-vraag
+    unit_of_measurement: "min"
+  - <<: *param
+    id: hre_p39
+    name: IDS CASCADE_REACTION
+  - <<: *param
+    id: hre_p40
+    name: IDS FLAME_MODULATION
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p41
+    name: IDS FANSPEED_HEATUP
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p42
+    name: IDS FLAME_LEVEL
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p43
+    name: IDS GRADIENT_LOW_PRESSURE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p44
+    name: IDS POSTPURGE_TIME
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p45
+    name: IDS PREPURGE_TIME
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p46
+    name: IDS ABS_FANSPEED_MAXIMUM
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p47
+    name: IDS DISPLAY_TYPE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p48
+    name: Parameter 5. max. instelwaarde aanvoertemperatuur
+    unit_of_measurement: "°C"
+  - <<: *param
+    id: hre_p49
+    name: IDS GASMETER_CONST_LSB
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p50
+    name: IDS GASMETER_CONST_MSB
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p51
+    name: Parameter c. min. pompcapaciteit
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p52
+    name: Parameter 3. max. pompcapaciteit
+    unit_of_measurement: "%"
+  - <<: *param
+    id: hre_p53
+    name: Parameter P. referentiewaarde tapwater
+  - <<: *param
+    id: hre_p54
+    name: IDS BOILER_TYPE
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p55
+    name: IDS BOILER_SETPOINT
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p56
+    name: IDS BOOSTER_SUPPLY_OFFSET
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p57
+    name: IDS FLAME_MODULATION_H
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p58
+    name: Parameter q zomerstand
+  - <<: *param
+    id: hre_p59
+    name: IDS HIGH_POWER
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p60
+    name: Parameter L legionellapreventie
+  - <<: *param
+    id: hre_p61
+    name: IDS DHW_WAIT_MAX_TIME
+    disabled_by_default: true
+  - <<: *param
+    id: hre_p62
+    name: IDS DHW_WAIT_FACTOR
+    disabled_by_default: true
+
+text_sensor:
+  - platform: template
+    id: hre_operating
+    name: Bedrijfstoestand
+  - platform: template
+    id: hre_fault_text
+    name: Storingscode
+  - platform: template
+    id: hre_fault_counters
+    name: Storingstellers
+    entity_category: diagnostic
+  - platform: template
+    id: hre_ot_thermostat
+    name: OpenTherm-thermostaat
+    entity_category: diagnostic
+  - platform: template
+    id: hre_hardware
+    name: Branderautomaat hardware
+    entity_category: diagnostic
+  - platform: template
+    id: hre_software
+    name: Branderautomaat software
+    entity_category: diagnostic
+  - platform: template
+    id: hre_rom_checksums
+    name: Branderautomaat ROM-checksums
+    entity_category: diagnostic
+  - platform: template
+    id: hre_production_code
+    name: Productiecode
+    entity_category: diagnostic
+  - platform: template
+    id: hre_checksums
+    name: Branderautomaat checksums (CRC)
+    entity_category: diagnostic
+  - platform: template
+    id: hre_rf_info
+    name: RF-infoblok (ruw)
+    entity_category: diagnostic
+    disabled_by_default: true
+  - platform: template
+    id: hre_rf_info2
+    name: RF-infoblok 2 (ruw)
+    entity_category: diagnostic
+    disabled_by_default: true
+
+# Optional DS18B20 sensors on GPIO27 (see GUIDE.md, "The optional part of the schematic").
+# one_wire:
+#   - platform: gpio
+#     pin: GPIO27
+# sensor:
+#   - platform: dallas_temp
+#     address: 0x1234567890abcdef
+#     name: "1-Wire: return pipe"

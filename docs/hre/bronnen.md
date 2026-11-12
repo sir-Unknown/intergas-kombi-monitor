@@ -54,7 +54,7 @@ Betrouwbaarheidsklassen:
 - **Bevindingen:** `cable_interface_icx` voegt standaard een XOR-checksum toe (`REV` zonder).
   Commando's `S?`, `S2`, `D2`, `REV`, `REW`, `CRC`, `H<n>`, `E<n>`, `B?`, `B1`, `V<n>`, `Q<n>`
   (blok schrijven), `P`, `G0`/`G1`, `Z0`/`Z1`, `RDP`, `I<n>`, `W<n>`, `N<n>`, plus thermostaat- en
-  buitentemperatuur-override. Dit is het protocol dat de huidige repo implementeert.
+  buitentemperatuur-override. Dit is het protocol van de Xtreme-firmware in `backup/xtreme`.
 
 ## Officiële documenten
 
@@ -163,7 +163,8 @@ Betrouwbaarheidsklassen:
 ## Repository
 
 [README.md](../../README.md), [GUIDE.md](../../GUIDE.md), [images/pinout-X14.png](../../images/pinout-X14.png),
-[images/schematic.png](../../images/schematic.png) en de code in [esphome/](../../esphome/).
+[images/schematic.png](../../images/schematic.png) en de Xtreme-code in
+[backup/xtreme/esphome/](../../backup/xtreme/esphome/).
 
 ## Reproductie
 

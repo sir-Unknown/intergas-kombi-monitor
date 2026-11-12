@@ -144,9 +144,9 @@ bedrijfscode → label.
 
 ## O16 Gedrag van de branderautomaat op de Xtreme-checksumbyte
 
-- **Wat:** wat een HRE doet met de extra XOR-byte die de huidige firmware achter elk commando
-  stuurt.
-- **Impact:** alleen relevant als iemand de huidige firmware op een HRE flasht; dat wordt
+- **Wat:** wat een HRE doet met de extra XOR-byte die de Xtreme-firmware (backup) achter elk
+  commando stuurt.
+- **Impact:** alleen relevant als iemand de Xtreme-firmware op een HRE flasht; dat wordt
   afgeraden.
 
 ## O17 Bronnen die niet bereikbaar of niet bekeken zijn
@@ -157,3 +157,13 @@ bedrijfscode → label.
   intergasstore.co.uk en intergas-verwarming.nl).
 - [RichieB2B/intergas-exporter](https://github.com/RichieB2B/intergas-exporter): niet bekeken.
 - Domoticaforum-link (Circuitsonline p. 4, "er zijn er ook met RS232 signalen"): niet bekeken.
+
+## O18 Grens voor "geen sensor"
+
+- **Wat:** bij welke waarde een temperatuurveld een ontbrekende of open sensor betekent.
+- **Waarom:** IDS zelf filtert niet. Waargenomen waarden voor afwezige of losgetrokken sensoren:
+  −31,13 (Leo), −31,81 en −32,00 (marcgk), −34,81 (IDS-testlog), −51,00 (Meewis, Xtreme).
+  [esphome/hre_ids.h](../../esphome/hre_ids.h) publiceert daarom alles onder −30 °C en 0x7FFF als
+  "onbekend".
+- **Impact:** laag; een echte buitentemperatuur onder −30 °C zou als onbekend verschijnen.
+- **Verifiëren:** waarde van niet-aangesloten S4/buitenvoeler in de log van de eigen ketel.

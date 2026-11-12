@@ -1,106 +1,94 @@
-# Home-Assistant Intergas Central Heating monitor/controller
+# Home Assistant Intergas Kombi Kompakt HRE monitor
 
-This project provides the necessary tools and scripts to monitor/control a Intergas
-central heating system via the IDS diagnosis interface.
+Read-only monitor for an Intergas **Kombi Kompakt HRE** (24/18 A, 28/24 A, 36/30 A, 36/48 A) via
+the IDS diagnostic interface (connector **X5**, "Computer interface"). An ESP32 is connected
+through optocouplers to the burner control board and publishes the boiler data to Home Assistant
+via ESPHome.
 
-It connects an ESP32 NodeMCU board through optocouplers to the burner control
-board of the Intergas Xtreme. From there detailed statistics are published to
-Home Assistant for accurate monitoring/controlling of the device.
+The firmware only reads. It never sends write commands or the burner test programs.
 
-This project has only been qualified with a Intergas Xtreme 36 central heater.
+The protocol, hardware details, sources and open questions are documented in
+[docs/hre](./docs/hre/README.md).
 
-## Features:
+> The original firmware of this project was written for the Intergas **Xtreme**, which uses a
+> different IDS protocol. It is kept unchanged in [backup/xtreme](./backup/xtreme/esphome/) and is
+> **not** suitable for the HRE.
 
-This project allows deep monitoring/controlling of all internal metrics/settings of the Intergas Xtreme.
-(Screenshots below only show a subset of he possible settings, full list can be found [here](./esphome/intergas-xtreme-monitor.yaml#L83))
+## What is published
 
-<img src="./images/deep-monitoring.png">
+Everything Intergas Diagnostic Software v1.83 reads over the cable, read only:
 
+- Temperatures: flow sensor S1, flow temperature (as shown on the display), return S2, hot water
+  S3, optional S4 and outside sensor, requested flow temperature, room setpoint/temperature/override
+  from the room thermostat (zone 1 and 2), outside temperature override.
+- CV water pressure, fan speed (set/actual), fan and pump PWM, ionisation current, tap flow.
+- Operating state, active fault code, pump/gas valve/ignition/flame/three-way valve, OpenTherm and
+  on/off thermostat inputs, RF thermostat status.
+- Operating hours and counters, gas meters CV/DHW and water meter (IC3 burner control), fault
+  counters per fault code.
+- All 63 parameters (positions 0-62) as separate sensors with their IDS names, including the
+  installer parameters of the manual.
+- Burner control diagnostics: hardware/software release, checksums, production code, load, mains
+  frequency.
 
-It also aenables control of all configuration settings of the Intergas Xtreme via Home-Assistant,
-including all 'Expert Settings'. This enables keeping track of these settings over time, and easy revert back
-to older settings.
-<img src="./images/parameter-control-via-home-assistant.png">
+The decoders have been compared field by field against the original IDS bytecode, see
+[docs/hre/verificatie.md](./docs/hre/verificatie.md). They have not been tested on a boiler yet.
 
-# Home Assistant
-The connection to Home Assistant is done via ESPHome and Wifi.
+## Physical connection
 
-# New to electronics?
+The adapter is described step by step in [GUIDE.md](./GUIDE.md) (written for the Xtreme X14
+connector; the adapter is the same). For the HRE read
+[docs/hre/hardware.md](./docs/hre/hardware.md) first: it covers connector X5, how to identify the
+pins and the signal voltage by measurement, and one preparation while soldering.
 
-> **Step-by-step build guide: [GUIDE.md](./GUIDE.md).** It walks through a perfboard (prototyping PCB board) build
-> with a shopping list, every connection by component and pin, and a read-only first software test.
+* Connector: Molex Mini-Fit Jr 2×2 housing with female terminals, the same type as on old ATX
+  power supplies ([housing 39-01-2040](https://www.conrad.nl/p/molex-39012040-mini-fit-jr-receptacle-housing-dual-row-4-circuits-ul-94v-2-natural-2448286),
+  [terminals 5556](https://www.conrad.nl/p/molex-39000078-100-pcs-mini-fit-female-crimp-terminal-tin-sn-over-copper-cu-plated-brass-16-awg-bag-2448254)).
+* Optocouplers: [4N25](https://www.conrad.nl/p/lite-on-optocoupler-fototransistor-4n25-dip-6-transistor-dc-1127375).
+* Controller: [NodeMCU-32S (ESP32)](https://docs.platformio.org/en/latest/boards/espressif32/nodemcu-32s.html)
+  or any ESP32-WROOM-32 board with GPIO16/17.
+* Power the ESP from its own USB supply, never from X5.
 
-# Physical connection
+## Schematics
 
-Prerequisites for the physical connection:
-* Cable required that connect to the X14 connector of the burner control board.
-  The type of connector is a Molex Mini-Fit, Jr. connector housing with female
-  terminals.
-
-  For reference, the connector is:
-  * [Molex part number 39-01-2200](https://www.conrad.nl/p/molex-39012040-mini-fit-jr-receptacle-housing-dual-row-4-circuits-ul-94v-2-natural-2448286), and
-  * [the terminals are Molex part number 5556](https://www.conrad.nl/p/molex-39000078-100-pcs-mini-fit-female-crimp-terminal-tin-sn-over-copper-cu-plated-brass-16-awg-bag-2448254).
-
-  This is also the same type of connector you can find on old ATX Power Supplies.
-
-* As opto coupler we use the [4N25](https://www.conrad.nl/p/lite-on-optocoupler-fototransistor-4n25-dip-6-transistor-dc-1127375) type.
-
-* As controller we use:
-  * a [NodeMCU-32s (ESP32)](https://docs.platformio.org/en/latest/boards/espressif32/nodemcu-32s.html) Development board
-
-
-# Schematics design
-
-Schematics of the IDS adapter is designed with KiCad.
+The adapter schematic is designed with KiCad.
 <img src="./images/schematic.png">
 
+## SW Installation
 
-# Cabling
-The intergas heater provides a 5V power supply via the X14 connector, but the datalines require 3,3V.
+1. Install the ESPHome add-on in Home Assistant.
+2. Open an SSH session to Home Assistant, then:
+   ```
+   $ cd config
+   $ git clone https://github.com/sir-Unknown/intergas-kombi-monitor.git esphome/intergas-kombi
+   $ echo '<<: !include intergas-kombi/esphome/intergas-hre-monitor.yaml' > esphome/intergas-hre-monitor.yaml
+   ```
+   The configuration includes `intergas-kombi/esphome/hre_ids.h`, so keep the clone folder name
+   `intergas-kombi`.
+3. Create `config/esphome/secrets.yaml` with:
+   ```
+   esphome_hassio_api_encryption_key: my-32-byte-base64-encryption-key
+   esphome_hassio_ota_pw: my-very-secure-ota-pw
+   esphome_wifi_network_ssid: my-wifi-access-point
+   esphome_wifi_network_password: my-wifi-password
+   esphome_wifi_ap_fallback_password: my-fallback-password
+   ```
+   The API key is explained [here](https://esphome.io/components/api.html); one can be generated
+   with `openssl rand -base64 32`.
+4. In the ESPHome dashboard, compile and install the firmware, then add the device in Home
+   Assistant.
 
-|<img src="./images/pinout-X14.png" height="300">|<img src="./images/X14.png" height="300">|
+For a first link test without the full firmware, use
+[docs/hre/intergas-hre-probe.yaml](./docs/hre/intergas-hre-probe.yaml); it logs the raw bytes of all
+read commands.
 
+## External references
 
-# SW Installation
+All sources (Intergas Diagnostic Software v1.83, installation manual, forum threads and community
+projects) are listed with what was taken from them in [docs/hre/bronnen.md](./docs/hre/bronnen.md).
 
-Here are the installation steps for the software in ESPHome:
-* First install the ESPHome toolset on Home Assistant via the Addon Store.
-* Open an SSH session to your Home-Assistant instance, then
-  ```
-  $ cd config
-  $ git clone https://github.com/little-chef/intergas-xtreme-monitor.git esphome/intergas-xtreme
-  $ echo '<<: !include intergas-xtreme/esphome/intergas-xtreme-monitor.yaml' > esphome/intergas-xtreme-monitor.yaml
-  ```
-  Next create the config/secrets.yaml file and add the following lines:
-  ```
-  esphome_hassio_api_encryption_key: my-32-byte-base64-encryption-key
-  esphome_hassio_ota_pw: my-very-secure-ota-pw
-  esphome_wifi_network_ssid: my-wifi-access-point
-  esphome_wifi_network_password: my-wifi-password
-  esphome_wifi_ap_fallback_password: my-fallback-password
-  ```
-  The api_encryption key is explained here: https://esphome.io/components/api.html?highlight=randomly%20generated
+## Final Note
 
-* Go to the ESPHome dashboard on Home Assistant, the new device should be visible. From
-  here you can compile the firmware for the NodeMCU, and install it to NodeMCU device.
-* Once the device is running, a new notification will pop up to register the device to your
-  Home Assistant instance. Complete that procedure.
-* After everything is successful, the metrics will become visible on the Home Assistant Dashboard.
-
-# External references:
-
-The code and content have been inspired by these public sources:
-* https://github.com/keesma/Intergas-Central-Heating-Monitor-Homie
-* https://www.circuitsonline.net/forum/view/80667/last
-* https://github.com/rickvanderzwet/IntergasBoilerReader
-* https://github.com/Meewis/ESP8266_MQTT_INTERGAS
-* https://gathering.tweakers.net/forum/list_messages/2056344
-* https://theintergasshop.co.uk/content/181-intergas-boiler-manuals -> IDS X Range Software
-
-# Final Note:
-
-Note that nothing in this project is supported by Intergas, neither is
-there any guarantee that the provided materials will work in your environment.
-Be aware that making mistakes in setting up the project may damage your heater
-or void your warranty. Use of anything provided of this project is at your own
-risk.
+Nothing in this project is supported by Intergas, and there is no guarantee that it works in your
+environment. Mistakes while connecting the adapter may damage your boiler or void your warranty.
+Use at your own risk.

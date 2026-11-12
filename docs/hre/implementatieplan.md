@@ -2,10 +2,15 @@
 
 Uitgangspunten:
 
-- De Xtreme-ondersteuning blijft ongewijzigd werken.
+- **HRE-specifiek en eenvoudig:** geen gedeelde code met de Xtreme. De Xtreme-firmware staat
+  ongewijzigd in [backup/xtreme](../../backup/xtreme/esphome/).
 - Eerst alleen lezen; schrijven pas na verificatie op de eigen ketel.
 - Alles wat in [onzekerheden.md](./onzekerheden.md) open staat, wordt vóór het betreffende
   werkpakket geverifieerd.
+
+Status (november 2026): fase 2 en 3 zijn gebouwd en compileren. De decoders zijn veld voor veld
+vergeleken met de originele IDS v1.83-bytecode en de poll-lus is gesimuleerd tegen een nagebootste
+ketel, zie [verificatie.md](./verificatie.md); **nog niet op een ketel geverifieerd**.
 
 ## Fase 0 — Hardware en eerste verbinding (gebruiker)
 
@@ -31,45 +36,47 @@ Leg één volledige ronde van de testconfiguratie naast het display. Elk punt sl
 | V8 | Laatste storing tonen (§8.1) | eerste gevulde `EN`-positie | O5 |
 | V9 | Tellers | `HN` branderstarts loopt op na een brandercyclus | O1 (variant) |
 
-## Fase 1 — Gedeelde transportlaag
+## Fase 1 — Gedeelde transportlaag (vervallen)
 
-Doel: één implementatie van planner en UART-statusmachine voor beide ketelfamilies.
+Vervallen door het besluit geen code met de Xtreme te delen.
 
-- Commando-eigenschappen per entry: checksum aan/uit, verwachte lengte (32/16/1).
-- Vóór elk verzoek de ontvangstbuffer legen.
-- Antwoord accepteren bij exact de verwachte lengte; bij verwacht + 1 de eerste byte weggooien
-  (IDS-gedrag) en het voorval loggen; anders verwerpen.
-- Xtreme-tabel ongewijzigd (checksum aan).
+## Fase 2 — HRE lezen (gebouwd)
 
-**Klaar wanneer:** Xtreme-gedrag ongewijzigd (zelfde commando's, zelfde bytes op de lijn, zelfde
-publicaties); een gesimuleerd HRE-antwoord van 31/32/33/34 bytes wordt verworpen/verwerkt/
-ingekort verwerkt/verworpen.
+Twee bestanden:
 
-## Fase 2 — HRE lezen
+| Bestand | Inhoud |
+|---|---|
+| [esphome/hre_ids.h](../../esphome/hre_ids.h) | Pure decoders zonder ESPHome-afhankelijkheden (te testen op een pc) voor alle leescommando's, plus versiedrempels, bedrijfs- en storingsteksten |
+| [esphome/intergas-hre-monitor.yaml](../../esphome/intergas-hre-monitor.yaml) | UART, één poll-lambda (elke 100 ms: commando sturen of antwoord verwerken) en de entiteiten |
 
-Nieuwe configuratie `intergas-hre-monitor.yaml` met HRE-decoders:
+Gedrag zoals IDS: ontvangstbuffer legen vóór elk commando; 300 ms na het versturen het antwoord
+lezen; precies de verwachte lengte, of één byte meer (dan vervalt de eerste byte); anders verwerpen.
+`REV` wordt na een fout na 10 s herhaald. Alles behalve `S?`/`S2` wacht op een geldig `REV` en volgt
+de IDS-versiedrempels ([protocol.md](./protocol.md)).
 
 | Commando | Interval | Publiceert |
 |---|---|---|
-| `S?\r` | 5 s | S1, aanvoer (display), S2 retour, S3 warm water, S4, S5 buiten (NaN bij −51,00/0x7FFF), druk (alleen als bit 28.5), temp_set, ventilator set/act (rpm), ventilator-PWM, ionisatiestroom, bedrijfscode als tekst, bits 26/28 (alleen IDS-bits), RF-bits 25, actieve storing |
-| `S2\r` | 5 s | tapdebiet, pomp-PWM, kamersetpoint/-temperatuur zone 1, buitentemperatuur-override |
-| `HN\r` | 60 s | tellers; variant op basis van `REV` |
-| `EN\r` | 600 s | storingshistorie |
-| `V?\r`, `V1\r` | 3600 s en na elke schrijfactie | parameters als alleen-lezen sensoren met HRE-namen |
-| `REV`, `B?\r` | 3600 s | versie, productiecode |
+| `REV` | 3600 s (eerst) | hardware- en softwarerelease, ROM-checksums |
+| `S?\r` | 5 s | S1, aanvoer (display), S2 retour, S3 warm water, S4, buiten, druk (alleen als bit 28.5), gevraagde aanvoer, ventilator gewenst/werkelijk, ventilator-PWM, ionisatiestroom, bedrijfstoestand (tekst), storing (vlag + tekst), alle IDS-bits uit byte 25/26/28 (incl. RF-thermostaat), verbinding |
+| `S2\r` | 5 s | tapdebiet, pomp-PWM, kamersetpoint/-temperatuur/-override zone 1 en 2, buitentemperatuur-override, OpenTherm-thermostaatgegevens |
+| `HN\r` | 60 s | alle tellers; gas- en watermeter volgens IC2/IC3/versie |
+| `EN\r` | 600 s | storingstellers per code (tekst) |
+| `V?\r` | 600 s | parameters 0-30, elk een alleen-lezen sensor |
+| `L` + 0x1F + `?` | 600 s | parameter 31 |
+| `V1\r` | 600 s | parameters 32-62, elk een alleen-lezen sensor |
+| `CRC` | 3600 s | interrupttijd, belasting, netfrequentie, referentiespanning, checksums |
+| `B?\r` | 3600 s | productiecode; RF-infoblok ruw (standaard uitgeschakeld) |
+| `B2\r` | 3600 s | RF-infoblok 2 ruw (standaard uitgeschakeld) |
 
-Niet in deze fase: bits uit O4 (pas na verificatie), entiteiten uit
-[verschillen-xtreme.md §7](./verschillen-xtreme.md#7-xtreme-only-entiteiten-die-voor-de-hre-vervallen).
+Dit zijn alle leescommando's die IDS v1.83 over de kabel stuurt; er wordt niets weggelaten.
 
-**Klaar wanneer:** V1–V9 kloppen; geen "CRC error" of lengtefouten in 24 uur logging.
+**Klaar wanneer:** V1–V9 kloppen; geen lengtefouten in 24 uur logging.
 
-## Fase 3 — HRE-teksten
+## Fase 3 — HRE-teksten (gebouwd)
 
 - Bedrijfscodes volgens [protocol.md §10](./protocol.md#10-bedrijfscodes-byte-24-van-s); onbekende
-  codes als `Code: <n>`.
+  codes als `Code <n>`.
 - Storingsteksten volgens [protocol.md §11](./protocol.md#11-storingscodes).
-
-**Klaar wanneer:** geen Xtreme-teksten in de HRE-configuratie.
 
 ## Fase 4 — Schrijven (pas na fase 2 op de eigen ketel)
 
