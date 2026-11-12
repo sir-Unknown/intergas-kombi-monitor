@@ -1,0 +1,80 @@
+# Read-only IDS link test for the Intergas Kombi Kompakt HRE (connector X5).
+#
+# - No custom component, no writable entities.
+# - Sends only read commands from Intergas Diagnostic Software v1.83 (see protocol.md):
+#   S?, S2, V?, V1, HN, EN, REV. HRE commands carry no checksum.
+# - Never add 'P' (write), 'SL'/'Sh'/'SH'/'SQ' (burner test programs), 'W', 'N' or 'I'.
+#
+# Requires secrets.yaml next to this file (same keys as in the repository README),
+# or copy this file into your ESPHome config folder.
+substitutions:
+  devicename: intergas-hre-monitor
+
+esphome:
+  name: ${devicename}
+
+esp32:
+  board: nodemcu-32s   # use esp32dev for a generic ESP32-WROOM-32 board
+  framework:
+    type: esp-idf
+
+uart:
+  - id: uart_boiler
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: 9600
+    debug:
+      direction: BOTH
+      # Must be true: nothing else reads the UART here.
+      dummy_receiver: true
+      after:
+        # Binary replies may contain 0x0D anywhere, so split on a pause.
+        timeout: 50ms
+      sequence:
+        - lambda: UARTDebug::log_hex(direction, bytes, ':');
+
+logger:
+  hardware_uart: UART0
+  level: DEBUG
+
+# One read command every 3 s; full round every 60 s.
+interval:
+  - interval: 60s
+    startup_delay: 15s
+    then:
+      - logger.log: "--- S? (status, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x53, 0x3F, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- S2 (extra status, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x53, 0x32, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- V? (parameters 0-31, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x56, 0x3F, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- V1 (extended parameters 32-63, IC3, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x56, 0x31, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- HN (operating hours, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x48, 0x4E, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- EN (fault history, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x45, 0x4E, 0x0D] }
+      - delay: 3s
+      - logger.log: "--- REV (version, 32 bytes)"
+      - uart.write: { id: uart_boiler, data: [0x52, 0x45, 0x56] }
+
+wifi:
+  ssid: !secret esphome_wifi_network_ssid
+  password: !secret esphome_wifi_network_password
+  ap:
+    password: !secret esphome_wifi_ap_fallback_password
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret esphome_hassio_api_encryption_key
+
+ota:
+  platform: esphome
+  password: !secret esphome_hassio_ota_pw
