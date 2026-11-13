@@ -10,7 +10,9 @@ Uitgangspunten:
 
 Status (november 2026): fase 2 en 3 zijn gebouwd en compileren. De decoders zijn veld voor veld
 vergeleken met de originele IDS v1.83-bytecode en de poll-lus is gesimuleerd tegen een nagebootste
-ketel, zie [verificatie.md](./verificatie.md); **nog niet op een ketel geverifieerd**.
+ketel, zie [verificatie.md](./verificatie.md); **nog niet op een ketel geverifieerd**. De ketel van de gebruiker is van 2026 en dus nieuwer
+dan elke bron ([O20](./onzekerheden.md#o20-ketel-uit-2026-nieuwer-dan-alle-bronnen)); de eerste
+testronde bepaalt of hij hetzelfde protocol spreekt.
 
 ## Fase 0 — Hardware en eerste verbinding (gebruiker)
 
@@ -26,7 +28,7 @@ Leg één volledige ronde van de testconfiguratie naast het display. Elk punt sl
 
 | # | Handeling | Te vergelijken | Sluit |
 |---|---|---|---|
-| V1 | `REV` lezen | `ic3…`/`ic2…`, `Vx.xx` | O1 |
+| V1 | `REV` lezen; ruwe bytes en lengte van elk antwoord bewaren (ketel van 2026, zie O20) | `ic3…`/`ic2…`, code van de vorm `*P131024*` (waarschijnlijk een datum, niet bevestigd), `Vx.xx`; alle antwoorden 32 bytes | O1, O20 |
 | V2 | CV-bedrijf, servicetoets indrukken (werkelijke aanvoertemperatuur) | `S?` bytes 2–3 ≈ display; bytes 0–1 = S1 | O15 |
 | V3 | Warm water tappen | byte 24 = 204; bytes 6–7 stijgen; `S2` bytes 0–1 tapdebiet; tijdens tappen +-toets (tapwaterhoeveelheid) | O6, O10 |
 | V4 | Na tappen | byte 24 → nadraaien of rust; tapcomfort aan: periodiek 51 | O10 |

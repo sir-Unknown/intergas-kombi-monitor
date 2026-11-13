@@ -30,6 +30,27 @@ Betrouwbaarheidsklassen:
 | `statistics.pyo` | `ae20227dd9ebaa5fe389510b7f779143764513f5fc8e0b7fb5b1ea7d72092315` | IC2/IC3-detectie, versiedrempels, `HN`-variant, uitgebreide parameterlijst (positie, standaard, min, max, naam) |
 | `IDS.py` (hoofdscript) | — (deel van `IDS.exe`) | Labeltabel (veldnamen NL/EN), koppeling bedrijfscode → label (`DoDrawing`), normale/expert-weergave temperaturen |
 
+### B1b Intergas Diagnostic Software (IDS) v1.84
+
+- **Klasse:** primair, maar herkomst niet officieel bevestigd: Google Drive-bestand
+  (`1tVNWh7s8zMSbDaJpdOmLinMk5EoUVSJd`, de link van de "IDS 1.84 Software (20 MB .zip)" in de
+  archiefversie van theintergasshop.co.uk, B7). De zip bevat `Intergas IDS Win32 V1.84/IDS.exe`
+  en meldt zichzelf als 1.84.
+- **SHA-256 zip:** `1a5de3e58a8e20acd4120009ff8e7baff1cfc3666aca4cd9e71a3da6375713e8`
+- **SHA-256 IDS.exe:** `369959be1ff59d88d7b13969ee38371ec715366ec7ffebd125c444324da6984b`
+- **Vergelijking met v1.83 (B1):** de seriële module `cable_interface.pyo`, `rf_interface_ic3.pyo`,
+  `rf_interface.pyo` en `options2.pyo` zijn **byte-identiek**. Alleen `statistics.pyo` en het
+  hoofdscript verschillen, en uitsluitend cosmetisch (decompilatie-diff): weergave van labels
+  (spaties, kolombreedte), een tikfout `nmode` in het geheugendumpbestand hersteld, dumps in de
+  map `memory_dumps`, en verschoven indexnummers in de vertaaltabel. Geen enkel commando,
+  veldindeling of versiedrempel is anders; de analyse in [protocol.md](./protocol.md) geldt dus
+  voor 1.83 en 1.84.
+- **Voorbeelddump:** `memory_dumps/memory_1606e08200_04-04-2018 12-49.txt`, een echte IC3:
+  `ic3mk1   *P160422*`, **software V2.30**, ROM-checksums `d5232adc` / `a15f5ea0`, 75 °C max. CV,
+  parameter 3 = 99, watermeter 0. De decoder verwerkt dit antwoord correct (versie `V2.30`,
+  IC3, alle IDS-drempels voldaan). IC3 komt dus ook met 2.x-versienummers voor. De differentiële test
+  ([verificatie.md](./verificatie.md)) bevatte al IC3-versies van 0.99 tot 3.x.
+
 ### B2 IDS 1.8 (dealerdownload)
 
 - **Klasse:** primair (oudere build); gebruikt ter vergelijking en voor de geheugendumps.
@@ -86,9 +107,36 @@ Betrouwbaarheidsklassen:
 
 ### B6 Intergas IDS-productpagina
 
-- **URL:** <https://www.intergas-verwarming.nl/en/trade/products/ids/>
-- **Gebruikt:** IDS is voor IC2/IC3 in Kombi Kompakt HR(E) en HReco; IC3 vanaf 1 januari 2013;
-  oudere HR(E) via USB-kabel.
+- **URL's:** <https://www.intergas-verwarming.nl/zakelijk/producten/ids/> (NL, laatst gewijzigd
+  19-2-2018) en <https://www.intergas-verwarming.nl/en/trade/products/ids/> (EN, gewijzigd
+  9-3-2026). Beide gelezen november 2026.
+- **Gebruikt:** IDS is bedoeld om een IC2 en/of IC3 branderautomaat van een Kombi Kompakt HRE of
+  HReco uit te lezen. Onder "Geschiktheid" staat dat de set is samengesteld voor ketels met een
+  **IC3**: Kombi Kompakt HR(E) vanaf 1 januari 2013 en alle HReco. "Voor het uitlezen van de
+  overige Kombi Kompakt HR(E) ketels" verwijst Intergas naar de **USB-uitleeskabel
+  branderautomaat**, een ander hulpmiddel.
+- **Lezing:** officieel is IDS dus voor IC3 (vanaf 2013). Dat een IC2 (`ic2kknl01*P100331*`, B13)
+  toch antwoordt, volgt uit de forumbronnen, niet uit Intergas. Ketels van vóór 2013 vallen buiten
+  de officiële ondersteuning, wat past bij het 52-bytes-antwoord van een HR uit 2006 (B17,
+  [O19](./onzekerheden.md#o19-oudere-hr-ketels-met-een-ander-antwoordformaat)).
+
+### B6b Intergas "End of support"
+
+- **URL:** <https://www.intergas-verwarming.nl/consument/end-of-support/> (laatst bijgewerkt
+  27-8-2026; gelezen november 2026).
+- **Gebruikt:**
+  - **HRE / HREco (IC3): geproduceerd 2008 – heden**, status ondersteund. Intergas noemt voor
+    cv-ketels maar twee branderautomaat-families: IC3 (HRE/HREco) en ICX (Xtreme/Xclusive, 2017 –
+    heden). Een nieuwere generatie wordt niet genoemd.
+  - Updates van de ketel verlopen "via Intergas service monteur", dus er bestaan veldupdates van de
+    branderautomaat-software en de softwareversie in een ketel hoeft niet bij de productiedatum te
+    passen (vgl. de IC3 met `V2.30` in B1b).
+  - De HRE heeft zelf geen internetverbinding; alleen indirect via de RF-gateway (zie `B?`/`B2`,
+    het RF-infoblok in [protocol.md](./protocol.md)). Gateway V1 (2013–2018) en V2 (2017–2025) zijn
+    verlopen; Gateway V3 en een LTE-gateway zijn van 2026.
+- **Afwijking:** de tabel noemt de HRE als IC3 vanaf 2008, terwijl [B6](#b6-intergas-ids-productpagina)
+  IC3 vanaf 2013 noemt en een HRE 28/24 uit 2010 een IC2 had (B13). De tabel is waarschijnlijk
+  vereenvoudigd; het type volgt uit het `REV`-antwoord.
 
 ### B7 theintergasshop.co.uk — Intergas boiler manuals
 
@@ -107,6 +155,8 @@ Betrouwbaarheidsklassen:
 | B10 | [Meewis/ESP8266_MQTT_INTERGAS](https://github.com/Meewis/ESP8266_MQTT_INTERGAS) (`.ino`, `Command_Sxx`, `command_REV.txt`) | Intergas, type niet vermeld (IC3: REV-bytes = `ic3mk1 *P190517*V2.53`) | Voorbeeldantwoorden zonder checksum; ruwe doorgifte | Ja. De ASCII-vertaling "ic2mk0" in zijn forumpost klopt niet met zijn eigen bytes. Schema-PDF: 404 |
 | B11 | [So871/intergasHrE-esphome-reader](https://github.com/So871/intergasHrE-esphome-reader) | HRE 36/48 A / HReco 40 (IC3) | ESPHome-variant van deze repo voor HRE: `S?`, `S2`, `V?`, `HN`, `REV` zonder checksum | Grotendeels; publiceert enkele temperaturen onder Xtreme-namen |
 | B12 | [EdwinBontenbal/InterGasGateway](https://github.com/EdwinBontenbal/InterGasGateway) | HRE (IC2) | Kabelschema X5 (pin 1 TX, 2 RX, 3 GND, 4 +5 V), adapter 3V3 + 4N25 + BC337, IC2-commandotabel, bedrijfscodes | Ja; sensortest 58 i.p.v. IDS 85; leest `io_curr` uit bytes 21/22 i.p.v. 23/22 |
+| B15 | [RichieB2B/intergas-exporter](https://github.com/RichieB2B/intergas-exporter) (`intergas-exporter.py`, Prometheus) | Intergas met IC3-waarden (watermeter, gasmeters, `V?`-parameters) | Alleen leescommando's `S?\r`, `S2\r`, `CRC`, `HN\r`, `V?\r`, 9600 baud; antwoord alleen geaccepteerd bij precies 32 bytes; parameternamen `param_3`, `param_c` enz. (volgens de handleiding, niet de IDS-namen) | Ja; geen checksum, zelfde commando's en lengte |
+| B16 | [keesma/Central-Heating-Intergas-Reader](https://github.com/keesma/Central-Heating-Intergas-Reader) | Prestige CW6 | Voorloper van B8 (ESP8266, MQTT, openHAB); 4N25, 220 Ω in / 1 kΩ uit, 9600 baud, vier polen Vcc/GND/Tx/Rx | Zelfde ketel en aanpak als B8; de README zegt dat B8 hem vervangt. Verder niet gebruikt |
 
 ## Fora
 
@@ -151,6 +201,16 @@ Betrouwbaarheidsklassen:
 | 23-11-2021 | RichieB | HRE-commando's `S?\r`, `S2\r`, `REV`, `CRC`, `HN\r`, `EN\r`, `V?\r`, `LX?`, `B?\r`, `B2\r`; X-lijn gebruikt ICX-software |
 | 23-11-2021 | Blihi | Xtreme-sniff: `S?`+`a`, `S2`+`l`, `D2`+`{` (checksum), `REV`, `REW@`, `H0` … |
 | 23-11-2021 | RichieB (beste antwoord) | `D2` alleen ICX; HRE gebruikt `HN` i.p.v. `H0`; bij HRE geeft `V?` alle instellingen uit de handleiding |
+
+### B17 Tweakers — "Intergas CV data uitlezen"
+
+<https://gathering.tweakers.net/forum/list_messages/2170490> — één bericht, geen reacties (gelezen november 2026).
+
+| Datum | Auteur | Inhoud |
+|---|---|---|
+| 24-1-2023 | thys | Kombi Kompakt **HR 28/24 uit 2006**. Antwoord op `S?\r` (9600 8N1) is **52 bytes** in plaats van 32; begint met `3f 00`, 24 voorbeeldregels met 10 s interval. IDS kan de data niet ontcijferen. Verwacht set-temperatuur 65 en een modus die wisselt tussen 1 en 5. Geen oplossing in het topic. Noemt B13, B14, B15, B9 en B16. |
+
+Gevolg: een ketel die op `S?` 52 bytes teruggeeft is geen HRE met IC2/IC3 en valt buiten het protocol van deze analyse (zie [O19](./onzekerheden.md#o19-oudere-hr-ketels-met-een-ander-antwoordformaat)). De firmware verwerpt zo'n antwoord met een lengtewaarschuwing.
 
 ## Datasheets
 

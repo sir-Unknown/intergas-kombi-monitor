@@ -134,7 +134,7 @@ interval:
           if (now - commands[pending].last_ms < 300)
             return;
 
-          uint8_t buf[hre::MAX_REPLY_LEN + 1];
+          uint8_t buf[64];  // room to show a longer reply from an unknown burner control in the log
           size_t len = 0;
           while (id(uart_boiler).available()) {
             id(uart_boiler).read_byte(&c);
@@ -148,8 +148,9 @@ interval:
 
           // As IDS: exactly the expected length, or one byte more (then the first byte is dropped).
           if (len != expected && len != expected + 1) {
-            ESP_LOGW("hre", "Command %c%c: %u bytes received, expected %u", commands[cmd].data[0],
-                     commands[cmd].data[1], (unsigned) len, (unsigned) expected);
+            ESP_LOGW("hre", "Command %c%c: %u bytes received, expected %u: %s", commands[cmd].data[0],
+                     commands[cmd].data[1], (unsigned) len, (unsigned) expected,
+                     format_hex_pretty(buf, len < sizeof(buf) ? len : sizeof(buf)).c_str());
             if (cmd == VERSION)
               commands[cmd].last_ms = now - commands[cmd].period_ms + 10000;  // retry in 10 s
             if (cmd == STATUS && ++status_failures >= 3)

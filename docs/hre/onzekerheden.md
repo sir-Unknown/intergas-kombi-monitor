@@ -155,7 +155,7 @@ bedrijfscode → label.
 - `theintergasshop.co.uk/content/181-intergas-boiler-manuals`: 404; alleen archiefversie
   (20-05-2026) bekeken; Google Drive-downloads daarvan niet gebruikt (zelfde soort bestanden via
   intergasstore.co.uk en intergas-verwarming.nl).
-- [RichieB2B/intergas-exporter](https://github.com/RichieB2B/intergas-exporter): niet bekeken.
+- ~~RichieB2B/intergas-exporter~~: inmiddels gelezen, zie [B15](./bronnen.md#community-code); bevestigt commando's, 9600 baud en antwoordlengte 32 zonder checksum.
 - Domoticaforum-link (Circuitsonline p. 4, "er zijn er ook met RS232 signalen"): niet bekeken.
 
 ## O18 Grens voor "geen sensor"
@@ -167,3 +167,38 @@ bedrijfscode → label.
   "onbekend".
 - **Impact:** laag; een echte buitentemperatuur onder −30 °C zou als onbekend verschijnen.
 - **Verifiëren:** waarde van niet-aangesloten S4/buitenvoeler in de log van de eigen ketel.
+
+## O19 Oudere HR-ketels met een ander antwoordformaat
+
+- **Wat:** een Kombi Kompakt HR 28/24 uit 2006 antwoordt op `S?\r` met 52 bytes ([B17](./bronnen.md#b17-tweakers--intergas-cv-data-uitlezen)). Een HR 36/30 uit 2006 (B13, marcgk) gaf wel 32 bytes met de bekende indeling voor S1/S2, en een Furimat-HR reageerde helemaal niet (2400 baud, 7E2). Welke ketels 32, 52 of geen antwoord geven is dus niet vastgesteld.
+- **Impact:** laag voor de HRE zelf (IC2/IC3). Wel relevant voor wie deze firmware op een oudere HR probeert: het antwoord wordt verworpen en "Verbinding ketel" blijft uit.
+- **Officieel:** Intergas ondersteunt IDS voor IC3-ketels vanaf 1-1-2013; oudere HR(E) lezen zij met een andere USB-uitleeskabel ([B6](./bronnen.md#b6-intergas-ids-productpagina)).
+- **Verifiëren:** bij een ketel die geen geldig antwoord geeft, de probe-configuratie ([intergas-hre-probe.yaml](./intergas-hre-probe.yaml)) draaien en de ruwe lengte en bytes van `S?` bewaren; die vergelijken met de 52-byte-voorbeelden in B17.
+
+## O20 Ketel uit 2026: nieuwer dan alle bronnen
+
+- **Wat:** de HRE staat in 2026 nog in de prijslijst van Intergas
+  ([Prijslijst 2026](https://www.intergas-verwarming.nl/app/uploads/2026/02/Prijslijst-Intergas-Verwarming-01-01-2026-tot-en-met-31-12-2026.pdf):
+  Kombi Kompakt HRE 24/18, 28/24, 36/30 en 36/48), dus het product bestaat nog. Maar alle ketels in
+  de bronnen zijn ouder: de `REV`-antwoorden en dumps dragen codes die op een datum lijken (niet bevestigd) uit 2013 (`*P131024*`),
+  2016 (`*P160422*`) en 2019 (`*P190517*`). Er is geen enkel antwoord van een ketel uit 2026 bekend.
+- **Bekend:** IDS 1.83 (2021) en 1.84 (2018) kennen alleen IC2 en IC3, en de IDS-pagina van Intergas
+  (EN-versie gewijzigd maart 2026, NL-versie sinds 2018 ongewijzigd; zie
+  [B6](./bronnen.md#b6-intergas-ids-productpagina)) noemt ook alleen IC2/IC3. Een gewijzigde
+  pagina zegt niets over een nieuwe generatie. De [end-of-supportpagina van Intergas](./bronnen.md#b6b-intergas-end-of-support) (27-8-2026) noemt voor de
+  HRE nog steeds alleen IC3 (productie 2008 – heden) en kent voor cv-ketels geen andere familie dan
+  IC3 en ICX (Xtreme/Xclusive): een sterke aanwijzing dat een HRE uit 2026 nog een IC3 is. Updates
+  gaan wel via de servicemonteur, dus een nieuwere IC3-software is mogelijk. Er is geen bevestiging dat een nieuwe productieserie nog dezelfde antwoorden
+  geeft. [INFERENTIE: een IC3 met nieuwere software werkt, omdat alle versiedrempels open eindigen.]
+- **Mogelijke afwijkingen:** nieuwe softwareversie met andere byte-indeling; nieuwe parameters of
+  storingscodes (onbekende codes worden als "onbekend" getoond); een andere X5-aansluiting of
+  signaalspanning (de metingen in [hardware.md](./hardware.md) gelden juist daarom vóór het
+  aansluiten); een nieuwe hardware-release die niet met `ic3` begint (dan behandelt de firmware hem
+  als IC2: minder commando's, geen foutmelding).
+- **Impact:** hoog voor de eerste verbinding, daarna laag. De firmware is alleen-lezen en
+  verwerpt elk antwoord dat niet 32 (of 33) bytes lang is.
+- **Verifiëren:** de eerste testronde met [intergas-hre-probe.yaml](./intergas-hre-probe.yaml):
+  bewaar het `REV`-antwoord (hardware-release met datumcode en softwareversie) en de lengte van
+  elk antwoord. De firmware logt een verworpen antwoord nu ook als ruwe bytes (tot 64), zodat een
+  afwijkend formaat te analyseren is.
+

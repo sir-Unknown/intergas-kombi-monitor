@@ -37,7 +37,8 @@ IDS bepaalt het type uit het `REV`-antwoord (`statistics.pyo`):
   `ic3mk2   *P131024*`); anders IC2 (voorbeeld `ic2kknl01*P100331*`).
 - Softwareversie = tekst vanaf `V`: **4 tekens** (`V2.5`), of 5 tekens (`V1.84`, `V3.70`) als het
   getal boven 3 ligt of het antwoord `ic3` bevat. Een IC2 met `V2.53` telt in IDS dus als 2.5.
-  IC2-versies zijn numeriek hoger (2.x/3.x) dan IC3-versies (1.x); drempels gelden daarom per type.
+  IC2-versies zijn meestal 2.x/3.x en IC3-versies 1.x, maar ook een IC3 met `V2.30` komt voor
+  (dump in IDS 1.84, [bronnen.md B1b](./bronnen.md#b1b-intergas-diagnostic-software-ids-v184)); het type volgt daarom altijd uit de hardware-release, niet uit het versienummer.
 
 | Functie | Voorwaarde in IDS |
 |---|---|

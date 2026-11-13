@@ -54,6 +54,13 @@ Testvectoren: 24.824 antwoorden. Willekeurige bytes, de echte voorbeeldantwoorde
 | Druk boven 3,7 bar | toont 0 | de gemeten waarde | een te hoge druk verbergen is onveilig |
 | `CRC` met deler 0 | Python-fout | onbekend | geen crash |
 
+### Ook IDS v1.84
+
+De download van IDS 1.84 ([bronnen.md B1b](./bronnen.md#b1b-intergas-diagnostic-software-ids-v184)) is
+vergeleken met 1.83: de seriële modules zijn byte-identiek, de rest verschilt alleen in weergave.
+De differentiële test geldt dus ook voor 1.84. De voorbeelddump daarin (IC3 `V2.30`) is als extra
+controle door de versiedecoder gehaald.
+
 ## 2. Simulatie van de poll-lus
 
 De lambda uit `intergas-hre-monitor.yaml` wordt letterlijk uit de YAML gehaald en op de pc
