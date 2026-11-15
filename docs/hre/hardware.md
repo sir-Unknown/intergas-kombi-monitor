@@ -71,14 +71,40 @@ Verder ongewijzigd: U1/U3 4N25, Q1/Q2 BC337, R2/R4 220 Ω, R1/R3 1 kΩ, C1 22 µ
 
 ### Bouwtekening HRE, met de ESP op het board
 
-![Bouwtekening HRE-adapter met ESP32 op female headers](../../images/adapter-perfboard-layout-hre.svg)
+![Bouwtekening HRE-adapter met ESP32 op female headers en drie NTC-ingangen](../../images/adapter-perfboard-layout-hre.svg)
 
 Zelfde print en plaatsing als de [wiring map](../../GUIDE.md#wiring-map) uit GUIDE.md, met de
-HRE-stappen erin en de Joy-IT NodeMCU ESP32 (USB-C) plat op het board in plaats van losse
-Dupont-draden. De ESP ligt met de antenne naar links en de USB-C over de rechterrand. Alleen de
-bovenste rij wordt aangesloten: **TX2** (GPIO17) naar Q2 B, **RX2** (GPIO16) naar U1 pin 4 / R3,
-**GND** en **3,3V**. Twee draden kruisen (geïsoleerd draad, boogje in de tekening), en de GND-draad
-loopt onder de ESP door.
+HRE-stappen erin, de Joy-IT NodeMCU ESP32 (USB-C) plat op het board in plaats van losse
+Dupont-draden, en drie optionele NTC-ingangen. Het board is verdeeld in vier kwadranten:
+
+| Kwadrant | Inhoud | Kant |
+|---|---|---|
+| Linksboven | U2, C1, Q1, R2, R1, kabel naar X5 | ketel |
+| Rechtsboven | R3, R4, Q2 | ESP |
+| Rechtsonder | ESP32 op female headers | ESP |
+| Linksonder | R5–R7 en een 6-polige schroefklem voor de NTC's | ESP |
+
+De scheiding is daardoor L-vormig: alleen U1 en U3 liggen erover. De ESP ligt met de antenne naar
+links en de USB-C over de rechterrand. Bovenste rij: **TX2** (GPIO17) naar Q2 B, **RX2** (GPIO16)
+naar U1 pin 4 / R3, **GND** en **3,3V**. Onderste rij: alleen de NTC-pinnen. Drie draden kruisen
+(geïsoleerd draad, boogje in de tekening); de GND-draad en de NTC-draden lopen onder de ESP door.
+
+**NTC's (optioneel, kan later).** Zelfde schakeling als `radiator_ntc` in
+[sir-Unknown/homelab-esphome](https://github.com/sir-Unknown/homelab-esphome) (DOWNSTREAM: NTC aan
+de GND-kant): voedings-GPIO → 10 kΩ → meetpunt (ADC) → NTC → GND. NTC: 10 kΩ bij 25 °C, B = 3435.
+
+| Klem | Meetpin | Weerstand |
+|---|---|---|
+| NTC1 | GPIO33 (D33) | R5 |
+| NTC2 | GPIO35 (D35) | R6 |
+| NTC3 | GPIO34 (D34) | R7 |
+| GND (3×, onderling verbonden) | ESP-GND | — |
+
+Voeding van de delers: **GPIO32** (D32), alleen aan tijdens het meten. Alle meetpinnen zijn ADC1;
+ADC2 werkt niet zolang wifi aan staat. Deze volgorde van pinnen houdt de draden onder de ESP vrij
+van kruisingen. `radiator_ntc` leest nu maximaal twee ingangen (`NUM_INPUTS = 2`) en bewaart de
+kalibratie onder één vaste sleutel, dus een tweede instantie op hetzelfde apparaat zou die delen;
+NTC3 vraagt een aanpassing van het component.
 
 **Pas solderen na het meten van X5** (gele ringen in de tekening):
 
@@ -92,8 +118,11 @@ Wordt in [Block 6](../../GUIDE.md#block-6-bench-test-with-power) te laag gemeten
 150 Ω.
 
 **Niet solderen:** de ESP zelf. Soldeer twee female headers (1 × 15, raster 2,54 mm) en steek de
-ESP erin; prik de headers daarvoor eerst op de ESP, dan klopt de rij-afstand vanzelf. Die headers
-en eventueel 150 Ω (2×) en 2,2 kΩ (1×) staan niet op de onderdelenlijst van GUIDE.md.
+ESP erin; prik de headers daarvoor eerst op de ESP, dan klopt de rij-afstand vanzelf.
+
+**Niet op de onderdelenlijst van GUIDE.md:** 2× female header 1 × 15; eventueel 2× 150 Ω en
+1× 2,2 kΩ; voor de NTC's 3× 10 kΩ 1 % en een 6-polige schroefklem met 5,08 mm steek (of drie
+2-polige naast elkaar).
 
 **Nog niet in de ketel:** de terminals pas in de Molex-stekker zetten na het meten van X5, en pas
 aansluiten als Block 5 en 6 goed zijn.
