@@ -85,9 +85,23 @@ Dupont-draden, en drie optionele NTC-ingangen. Het board is verdeeld in vier kwa
 | Linksonder | R5–R7 en een 6-polige schroefklem voor de NTC's | ESP |
 
 De scheiding is daardoor L-vormig: alleen U1 en U3 liggen erover. De ESP ligt met de antenne naar
-links en de USB-C over de rechterrand. Bovenste rij: **TX2** (GPIO17) naar Q2 B, **RX2** (GPIO16)
-naar U1 pin 4 / R3, **GND** en **3,3V**. Onderste rij: alleen de NTC-pinnen. Drie draden kruisen
-(geïsoleerd draad, boogje in de tekening); de GND-draad en de NTC-draden lopen onder de ESP door.
+links, vier gaten van de rechterrand, zodat het hele ESP-board inclusief de USB-C binnen de print
+valt. Bovenste rij: **TX2** (GPIO17) naar Q2 B, **RX2** (GPIO16) naar U1 pin 4 / R3, **GND** en
+**3,3V**. Onderste rij: alleen de NTC-pinnen. Drie draden kruisen (geïsoleerd draad, boogje in de
+tekening). De GND-draad gaat links van de bovenste headerrij naar beneden en loopt, net als de
+NTC-draden, onder de ESP door; geen enkele draad loopt door een ongebruikte headerpin.
+
+**Behuizing: één kabelopening.** Alle kabels gaan door één opening in de onderwand van de doos
+(wartel met meervoudige inzet, of een sleuf met doorvoerrubber), linksonder, recht onder de schroefklem:
+
+| Kabel | Route in de doos |
+|---|---|
+| X5 naar de ketel | Mantel met een tie-wrap door twee gaatjes aan de linkerrand van de print (trekontlasting), daarna langs de linkerkant naar de opening; de aders lopen over de print naar de vier stubs |
+| NTC's | Recht naar beneden uit de schroefklem |
+| USB-C naar de lader | Haakse stekker naar beneden, langs de rechterkant en onder de print naar de opening; met een rechte stekker ruimte vrijhouden voor stekker en kabelbocht |
+
+De behuizing staat schematisch in de tekening, niet op schaal. Zet elke kabel binnen de doos vast,
+zodat trekken aan een kabel niet op de print of de schroefklem komt.
 
 **NTC's (optioneel, kan later).** Zelfde schakeling als `radiator_ntc` in
 [sir-Unknown/homelab-esphome](https://github.com/sir-Unknown/homelab-esphome) (DOWNSTREAM: NTC aan
@@ -122,7 +136,8 @@ ESP erin; prik de headers daarvoor eerst op de ESP, dan klopt de rij-afstand van
 
 **Niet op de onderdelenlijst van GUIDE.md:** 2× female header 1 × 15; eventueel 2× 150 Ω en
 1× 2,2 kΩ; voor de NTC's 3× 10 kΩ 1 % en een 6-polige schroefklem met 5,08 mm steek (of drie
-2-polige naast elkaar).
+2-polige naast elkaar); voor de behuizing een wartel met meervoudige inzet (of doorvoerrubber),
+tie-wraps en eventueel een haakse USB-C-kabel.
 
 **Nog niet in de ketel:** de terminals pas in de Molex-stekker zetten na het meten van X5, en pas
 aansluiten als Block 5 en 6 goed zijn.
