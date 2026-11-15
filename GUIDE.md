@@ -127,9 +127,10 @@ column gets wired together.
 **Why these parts.** The boiler's TX line and the ESP's GPIO17 can't drive an LED on their own,
 so each one drives a transistor (Q1, Q2) that does it for them. R2 and R4 (220 Ω) set the LED
 current to about 6 mA; the transistors need no extra base resistor in this circuit. R1 and R3
-(1 kΩ) pull each optocoupler's output down to 0 V when its LED is off. Don't swap in other
+(1 kΩ) pull each optocoupler's output down to 0 V when its LED is off. Don't swap in larger
 values: a larger R2/R4 means less LED current, and the 4N25 output is the weakest point of the
-design.
+design. The one allowed change is a smaller R2 or R4 (150 Ω) when the bench test in
+[block 6](#block-6-bench-test-with-power) reads too low.
 
 ## Wiring map
 
@@ -151,6 +152,15 @@ Build and test in this order, so a mistake shows up early.
 - [ ] Place **U2 (LP2950)** near the left edge, flat face toward the bottom edge of the board, so
   its legs read OUT, GND, IN from left to right. Double-check before soldering: soldering it
   rotated puts 5 V on its output and it won't work (an easy mistake to make).
+- [ ] **HRE only (X5), read this before the next two steps.** It is not yet known whether X5 uses
+  3.3 V or 5 V signals, so build in a way that lets you switch later without rebuilding:
+  - connect C1 + **directly to the U2 OUT leg** underneath the board (bend the leg over), not to
+    the 3.3 V wire;
+  - make the connection from U2 OUT to the boiler 3.3 V wire a **separate short wire**, soldered
+    at both ends.
+
+  If X5 turns out to use 5 V, you only move the U2 end of that short wire from OUT to IN. See
+  [docs/hre/hardware.md](./docs/hre/hardware.md#meten-op-de-ketel-vóór-aansluiten).
 - [ ] Place **C1** just below U2: long leg (+) to OUT, striped leg (−) to GND.
 - [ ] Run the **boiler 3.3 V** wire from U2 OUT along the left edge. Its ends go to Q1 C and
   U3 pin 5 later.
@@ -205,6 +215,21 @@ Build and test in this order, so a mistake shows up early.
 - [ ] Within each side, all points of one net beep to each other (for example all boiler GND
   points).
 
+### Block 6: bench test with power
+
+This checks that each optocoupler passes a clear high level, before anything touches the boiler.
+Feed 5 V into the boiler cable's **+5 V and GND** wires (see [Bench power](#bench-power)), and
+power the ESP32 from its own USB cable (no firmware needed). Disconnect the wire on ESP pin
+**17** for this test.
+
+- [ ] Touch the **TX cable wire** (Q1 B) to the **boiler 3.3 V** wire. Measure **ESP pin 16**
+  against ESP GND: it must read **at least 2.5 V**. Touch TX to **boiler GND** instead: about 0 V.
+  If it stays below 2.5 V, replace **R2** (220 Ω) with **150 Ω**.
+- [ ] Touch the loose **pin 17 wire** (Q2 B) to **ESP 3V3**. Measure the **RX cable wire** (U3
+  pin 4) against **boiler GND**: at least 2.5 V. Touch it to ESP GND instead: about 0 V. If it
+  stays below 2.5 V, replace **R4** (220 Ω) with **150 Ω**.
+- [ ] Reconnect pin 17, remove the bench power wires, and repeat the beep test from block 5.
+
 ## Bench power
 
 For the bench tests the boiler side needs 5 V on its +5 V and GND wires. Best is a second USB
@@ -229,6 +254,12 @@ moulded on the plug. Once plugged into the boiler, the latch faces the back of t
 than the left. If you have a multimeter, check the plug at the boiler before soldering the
 cable to the board: with the boiler on and the loose ends apart, +5 V to GND reads about 5 V and
 TX to GND about 3.3 V.
+
+**HRE (X5):** the same plug and housing. The rule that holds regardless of how you look at it:
++5 V and GND sit in the column on the latch side, and TX is in the same row as +5 V. Do **not**
+rely on drawings for X5: identify the pins and the signal level by measuring, as described in
+[docs/hre/hardware.md](./docs/hre/hardware.md#meten-op-de-ketel-vóór-aansluiten). If TX reads
+about 5 V instead of 3.3 V, move the wire from block 1 before you connect.
 
 ## Software, step 1: a read-only test
 

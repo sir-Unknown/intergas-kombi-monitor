@@ -64,6 +64,10 @@ bedrijfscode → label.
 - **Impact:** laag.
 - **Verifiëren:** tappen met bekend debiet; gasmeterstand over een periode vergelijken met de
   gasmeter van de woning.
+- **Waarneming:** Pluimvee ([B18](./bronnen.md#community-code)) deelt de `HN`-gasmeters door
+  11619,27 in plaats van 10000, na ijking tegen de woningmeter. Dat is 0,86 × de IDS-waarde. Of
+  daar ander gasverbruik (kookplaat) in meetelt, staat er niet bij. Zijn tapdebiet tijdens het
+  tappen (1,7–5,7) past bij l/min.
 
 ## O7 Parameter J en nieuwere parameters
 
@@ -113,7 +117,10 @@ bedrijfscode → label.
 ## O12 Stroombudget X5
 
 - **Wat:** hoeveel stroom X5 mag leveren.
-- **Waarom:** nergens gedocumenteerd; één melding van storing 2 bij voeden van ESP + opto's (< 100 mA).
+- **Waarom:** nergens gedocumenteerd. Eén melding van storing 2 bij voeden van ESP + opto's
+  (< 100 mA). Daartegenover ontwierp Edwin Bontenbal ([B12](./bronnen.md#community-code)) zijn
+  gateway om met jumpers J4/J5 een Wemos D1 mini uit X5 te voeden, op een IC2. Een meting of
+  langetermijnervaring daarvan staat niet in zijn repo.
 - **Impact:** middel — adapter trekt ≈ 10 mA; ESP blijft op eigen voeding.
 
 ## O13 Betrouwbaarheid van de decompilatie
@@ -151,7 +158,6 @@ bedrijfscode → label.
 
 ## O17 Bronnen die niet bereikbaar of niet bekeken zijn
 
-- Schema-PDF van Meewis (`intergas-esp8266.pdf`): 404.
 - `theintergasshop.co.uk/content/181-intergas-boiler-manuals`: 404; alleen archiefversie
   (20-05-2026) bekeken; Google Drive-downloads daarvan niet gebruikt (zelfde soort bestanden via
   intergasstore.co.uk en intergas-verwarming.nl).
@@ -162,7 +168,8 @@ bedrijfscode → label.
 
 - **Wat:** bij welke waarde een temperatuurveld een ontbrekende of open sensor betekent.
 - **Waarom:** IDS zelf filtert niet. Waargenomen waarden voor afwezige of losgetrokken sensoren:
-  −31,13 (Leo), −31,81 en −32,00 (marcgk), −34,81 (IDS-testlog), −51,00 (Meewis, Xtreme).
+  −31,13 (Leo), −31,81 en −32,00 (marcgk), −34,81 (IDS-testlog), −50,81 (Pluimvee, HRE 24/18),
+  −51,00 (Meewis).
   [esphome/hre_ids.h](../../esphome/hre_ids.h) publiceert daarom alles onder −30 °C en 0x7FFF als
   "onbekend".
 - **Impact:** laag; een echte buitentemperatuur onder −30 °C zou als onbekend verschijnen.

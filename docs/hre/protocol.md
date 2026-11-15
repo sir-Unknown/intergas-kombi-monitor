@@ -110,6 +110,8 @@ testprogramma's komen overeen met de handleiding §2.6 ("L", "h", "H").
 
 Controle op echte data (IC3-dump `memory_1404s01060`, software V1.84, zie bronnen):
 S1 = 53,71, S2 = 29,00 → (53,71 + 2·29,00)/3 = 37,24; gemeten `temp_flow` = 37,15.
+Pluimvee ([B18](./bronnen.md#community-code), HRE 24/18) logde 81 statusregels tijdens CV-bedrijf:
+`temp_flow` − (S1 + 2·S2)/3 ligt overal tussen −0,10 en −0,01.
 
 ### 4.1 Bitvelden
 
@@ -135,6 +137,11 @@ S1 = 53,71, S2 = 29,00 → (53,71 + 2·29,00)/3 = 37,24; gemeten `temp_flow` = 3
 | 28 | 5 | `pressure_sensor` | "Druk sensor" (sensor aanwezig) | IDS |
 | 28 | 6 | `burner_block` | — | **Niet in IDS**; idem |
 | 28 | 7 | `grad_flag` | — | **Niet in IDS**; idem |
+
+Bitvolgorde: IDS telt vanaf de minst significante bit, net als B8, B9, B11 en B12. Pluimvee (B18)
+telt vanaf de meest significante bit (`gp_switch` = bit 7) en leest de byte-28-bits uit byte 26.
+De ruwe dump van Meewis (B10) volgt IDS: byte 28 = 0x20 (alleen `pressure_sensor`) bij 1,49 bar in
+rust. In de volgorde van Pluimvee zou dat "vonk aan" in rust betekenen.
 
 ## 5. Extra status `S2` (32 bytes)
 

@@ -54,23 +54,30 @@ Een HRE A heeft daarom vrijwel zeker een IC3 (**afgeleid**; te bevestigen met `R
 
 ## Voorbereiding bij het solderen
 
-Bouw volgens [GUIDE.md](../../GUIDE.md) met één toevoeging:
+Bouw volgens [GUIDE.md](../../GUIDE.md); de HRE-stap staat in
+[Block 1](../../GUIDE.md#block-1-power-boiler-side):
 
-- Verbind **U2 OUT met de "boiler 3.3 V"-lijn via een losse draadbrug** (niet direct solderen). Als
-  de meting op de ketel 5 V-signalen laat zien, kan de ketelzijde naar +5 V worden omgezet zonder
-  print te slopen.
+- C1 + **direct aan het U2 OUT-pootje**, niet aan de "boiler 3.3 V"-draad.
+- **U2 OUT naar de "boiler 3.3 V"-draad via een losse draadbrug**, aan beide kanten gesoldeerd.
+  Laat de meting op de ketel 5 V-signalen zien, dan verplaats je alleen het U2-eind van die
+  draadbrug van OUT naar IN. C1 blijft zo op de uitgang van U2 en de print hoeft niet te worden
+  omgebouwd.
+- **Adapter al gebouwd** zonder draadbrug: niets aanpassen zolang ketel-TX in rust ≈ 3,3 V meet.
+  Meet je ≈ 5 V, onderbreek dan de verbinding tussen U2 OUT en de "boiler 3.3 V"-lijn en verbind
+  die lijn met U2 IN (+5 V). Zat C1 + op de lijn, zet hem dan direct aan U2 OUT. Volg daarna de
+  5 V-regel in [Meten op de ketel](#meten-op-de-ketel-vóór-aansluiten).
 
 Verder ongewijzigd: U1/U3 4N25, Q1/Q2 BC337, R2/R4 220 Ω, R1/R3 1 kΩ, C1 22 µF.
 
 ## Bankcontroles
 
-Aanvullend op [GUIDE.md § Block 5](../../GUIDE.md#block-5-checks-before-power) en
-[§ Software, step 1](../../GUIDE.md#software-step-1-a-read-only-test).
+Uitgevoerd volgens [GUIDE.md § Block 5](../../GUIDE.md#block-5-checks-before-power) en
+[§ Block 6](../../GUIDE.md#block-6-bench-test-with-power); samengevat:
 
 | Meting | Eis | Als het niet klopt |
 |---|---|---|
-| Ketel-TX-draad tegen U2 OUT → spanning GPIO16 t.o.v. ESP-GND | **≥ 2,5 V** | R2 220 Ω → 150 Ω |
-| Ketel-RX-draad t.o.v. ketel-GND, ESP in rust (GPIO17 hoog) | ≈ 3,3 V | Q2, R4, U3 controleren |
+| Ketel-TX-draad tegen "boiler 3.3 V" → spanning GPIO16 t.o.v. ESP-GND | **≥ 2,5 V** | R2 220 Ω → 150 Ω |
+| Losse GPIO17-draad (Q2 B) tegen ESP-3V3 → ketel-RX-draad t.o.v. ketel-GND | **≥ 2,5 V** | R4 220 Ω → 150 Ω |
 | Doorpiepen ketel-GND ↔ ESP-GND | geen piep | soldeerbrug zoeken |
 
 ### Waarom de eerste meting nodig is
@@ -99,7 +106,7 @@ LED-stroom ≈ 9,3 mA (ruim onder 60 mA absoluut maximum). Hetzelfde geldt in de
 | TX in rust | Actie |
 |---|---|
 | ≈ 3,3 V | Adapter zoals gebouwd (draadbrug op U2 OUT) |
-| ≈ 5 V | Draadbrug naar +5 V. Dan R1 waarschijnlijk 2,2 kΩ; **op de bank controleren** dat ketel-RX hoog ≥ 4 V wordt (Schmitt-trigger-ingang van een 5 V-microcontroller vraagt 0,8 × 5 V) voordat je aansluit |
+| ≈ 5 V | U2-eind van de draadbrug van OUT naar IN. Dan R1 waarschijnlijk 2,2 kΩ; **op de bank controleren** (Block 6, nu met 5 V op de lijn) dat ketel-RX hoog ≥ 4 V wordt (Schmitt-trigger-ingang van een 5 V-microcontroller vraagt 0,8 × 5 V) voordat je aansluit |
 | iets anders / onstabiel | Niet aansluiten; eerst uitzoeken |
 
 7. Noteer het productiejaar van het typeplaatje (`******-jjmm`, installatievoorschrift p. 3).
@@ -120,3 +127,39 @@ LED-stroom ≈ 9,3 mA (ruim onder 60 mA absoluut maximum). Hetzelfde geldt in de
   (GPIO16/17) (**afgeleid**, niet getest).
 - Meewis plaatste een BC337 als emittervolger tussen ESP8266-TX en de opto om opstartproblemen te
   voorkomen; GUIDE.md heeft die transistor al (Q2).
+
+## Adapters in community-projecten
+
+Gelezen uit de schema's en code van de repositories (november 2026). Geen van hen meldt het
+gemeten signaalniveau van X5.
+
+| Project | Ketel | Ketel-TX → ESP | ESP → ketel-RX | Voeding ketelzijde | ESP-voeding | Controller, pinnen |
+|---|---|---|---|---|---|---|
+| little-chef / deze repo ([GUIDE.md](../../GUIDE.md), zelfde onderdelen en schema) | — | BC337-emittervolger (C aan 3,3 V) → 220 Ω → 4N25; uitgang 1 kΩ naar GND | idem gespiegeld | LP2950-3.3 uit X5 +5 V | eigen USB | ESP32-WROOM-32 (NodeMCU-32S, of Joy-IT NodeMCU ESP32 USB-C), UART2 GPIO16/17 |
+| Meewis (`intergas-esp8266.pdf`) | IC3 | BC337-emittervolger, **collector aan X5 V+** → 220 Ω → 4N25; uitgang 1 kΩ | BC337-emittervolger aan 3,3 V → 220 Ω → 4N25; opto-collector aan **X5 V+**, 1 kΩ naar GND | geen regelaar: X5 V+ direct | LM117 → 3V3 uit een losse "+V"-voeding op ESP-massa; niet verbonden met X5 V+ of X5 GND (voeding zelf niet gespecificeerd) | ESP-01, UART0 |
+| Edwin Bontenbal (`InterGas.kicad_sch`, netlijst uitgelezen) | HRE IC2 | **Gemeenschappelijke emitter**: 68 kΩ basis, LED + 220 Ω aan 3,3 V; uitgang 470 Ω | idem gespiegeld | L78L33 uit X5 +5 V; 100 nF / 10 nF | jumpers J4/J5 verbinden GND en +5 V met X5 (README: "run paricitair on the boiler x5 PCB connector (without external power)") | Wemos D1 mini, SoftwareSerial D6 (TX) / D7 (RX) |
+| keesma (handschets + Wemos-schema) | Prestige CW6 | **Opto-LED direct uit ketel-TX** via 200–500 Ω; uitgang 1 kΩ | 220–500 Ω → LED; opto-collector aan X5 V+, 1 kΩ naar GND | X5 V+ direct | HiLink 3,3 V | ESP8266, SoftwareSerial GPIO4 (RX) / GPIO5 (TX) |
+| So871 | HRE 36/48 A / HReco | niet gedocumenteerd | | | | ESP32, UART2 GPIO16/17 (zelfde als little-chef/GUIDE.md) |
+| Pluimvee | HRE 24/18 | geen schema in de repo | | | | Wemos D1 mini; Intergas2MQTT: RX op D7 (UART0 omgezet, alleen ontvangen), TX op D4 (UART1, alleen zenden); ESPHome-versie: GPIO1/3 met logger `baud_rate: 0` |
+| rixvet | Prestige CW6 | FTDI TTL-232 5 V, zonder scheiding | | V+ niet aangesloten | USB | Raspberry Pi |
+
+Wat hieruit volgt voor deze adapter:
+
+- **Topologie bevestigd.** Op een HRE IC2 (Edwin) en een IC3 (Meewis) werkt een 4N25 met
+  transistor ervoor en een 470 Ω–1 kΩ uitgangsweerstand. Op een CW6 (keesma) werkt de opto zonder
+  transistor, rechtstreeks uit ketel-TX. Ketel-TX kan daar dus enkele mA leveren.
+- **Ketel-RX hoog = X5 V+ (≈ 5 V) bij Meewis en keesma.** Hun ketels accepteren dat. Dat 3,3 V ook
+  als hoog geldt, tonen Edwin (IC2, via opto) en BAS_esp (HReco, ESP direct op X5) aan; voor een
+  HRE A met IC3 is het niet gemeld. Daarom blijft de draadbrug uit
+  [Voorbereiding bij het solderen](#voorbereiding-bij-het-solderen) nodig.
+- **Emittervolger of gemeenschappelijke emitter.** Edwin stuurt de LED met een schakelende
+  transistor. Met 68 kΩ is de basisstroom ≈ (3,3 − 0,7) / 68 kΩ ≈ 38 µA. Een LED-stroom van ≈ 9 mA
+  vraagt dan h<sub>FE</sub> ≥ 240: dat haalt een BC337-40 wel, maar een BC337 of BC337-16 niet
+  zeker. De emittervolger in GUIDE.md hangt niet af van h<sub>FE</sub>.
+- **Pinnummering verschilt per bron, de posities niet.** Meewis nummert 1 TX, 2 RX, 3 V+, 4 GND;
+  Edwin 1 TX, 2 RX, 3 GND, 4 +5 V. Pluimvee hergebruikt het plaatje van rixvet (PL2303-kleuren:
+  wit = "Rx", groen = "Tx", zwart = GND, V+ niet aangesloten). Alle drie passen bij de regel in
+  [Pinout](#pinout).
+- **Bootruis op ESP8266.** Pluimvee legt TX bewust op D4 (UART1), omdat UART0 met pinswap TX op
+  D8 zet en die pin bij het opstarten laag moet blijven. Dit probleem bestaat niet bij een ESP32 op
+  UART2.
