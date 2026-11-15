@@ -215,6 +215,7 @@ gemeten signaalniveau van X5.
 | So871 | HRE 36/48 A / HReco | niet gedocumenteerd | | | | ESP32, UART2 GPIO16/17 (zelfde als little-chef/GUIDE.md) |
 | Pluimvee | HRE 24/18 | geen schema in de repo | | | | Wemos D1 mini; Intergas2MQTT: RX op D7 (UART0 omgezet, alleen ontvangen), TX op D4 (UART1, alleen zenden); ESPHome-versie: GPIO1/3 met logger `baud_rate: 0` |
 | rixvet | Prestige CW6 | FTDI TTL-232 5 V, zonder scheiding | | V+ niet aangesloten | USB | Raspberry Pi |
+| DereshBounce (B19, fork van rixvet) | Kombi Kompakt HRE 36/30 | FTDI TTL 5 V, zonder scheiding | | Vcc niet aangesloten: "or the boiler will trip" | USB | Raspberry Pi 2B |
 
 Wat hieruit volgt voor deze adapter:
 

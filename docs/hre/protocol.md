@@ -138,7 +138,7 @@ Pluimvee ([B18](./bronnen.md#community-code), HRE 24/18) logde 81 statusregels t
 | 28 | 6 | `burner_block` | — | **Niet in IDS**; idem |
 | 28 | 7 | `grad_flag` | — | **Niet in IDS**; idem |
 
-Bitvolgorde: IDS telt vanaf de minst significante bit, net als B8, B9, B11 en B12. Pluimvee (B18)
+Bitvolgorde: IDS telt vanaf de minst significante bit, net als B8, B9, B11, B12, B19 en B20. Pluimvee (B18)
 telt vanaf de meest significante bit (`gp_switch` = bit 7) en leest de byte-28-bits uit byte 26.
 De ruwe dump van Meewis (B10) volgt IDS: byte 28 = 0x20 (alleen `pressure_sensor`) bij 1,49 bar in
 rust. In de volgorde van Pluimvee zou dat "vonk aan" in rust betekenen.
@@ -336,7 +336,8 @@ gekoppeld aan de statuslabels 45–57 plus twee afgeleide labels.
 | > 255 | Fault / Storing | Storing; code = waarde − 256 (alleen in IDS-weergave) |
 
 Afwijkende community-interpretaties: rixvet en Meewis (51 = warm water, 204 = nadraaien);
-Edwin Bontenbal (58 = sensortest). IDS is leidend.
+Edwin Bontenbal (58 = sensortest); DereshBounce en So871/jjwbruijn (0 = CV-bedrijf, 51 = nadraaien
+tapwater). De LAN2RF-decoder van eddgrant (B21) gebruikt dezelfde tabel als IDS. IDS is leidend.
 
 ## 11. Storingscodes
 
