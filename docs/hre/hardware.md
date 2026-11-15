@@ -69,6 +69,35 @@ Bouw volgens [GUIDE.md](../../GUIDE.md); de HRE-stap staat in
 
 Verder ongewijzigd: U1/U3 4N25, Q1/Q2 BC337, R2/R4 220 Ω, R1/R3 1 kΩ, C1 22 µF.
 
+### Bouwtekening HRE, met de ESP op het board
+
+![Bouwtekening HRE-adapter met ESP32 op female headers](../../images/adapter-perfboard-layout-hre.svg)
+
+Zelfde print en plaatsing als de [wiring map](../../GUIDE.md#wiring-map) uit GUIDE.md, met de
+HRE-stappen erin en de Joy-IT NodeMCU ESP32 (USB-C) plat op het board in plaats van losse
+Dupont-draden. De ESP ligt met de antenne naar links en de USB-C over de rechterrand. Alleen de
+bovenste rij wordt aangesloten: **TX2** (GPIO17) naar Q2 B, **RX2** (GPIO16) naar U1 pin 4 / R3,
+**GND** en **3,3V**. Twee draden kruisen (geïsoleerd draad, boogje in de tekening), en de GND-draad
+loopt onder de ESP door.
+
+**Pas solderen na het meten van X5** (gele ringen in de tekening):
+
+| Onderdeel | Bij ≈ 3,3 V op TX | Bij ≈ 5 V op TX |
+|---|---|---|
+| U2-eind van de draadbrug | aan U2 OUT | aan U2 IN |
+| R1 | 1 kΩ | waarschijnlijk 2,2 kΩ; bankcontrole ketel-RX hoog ≥ 4 V |
+
+**Wel solderen, maar zo dat je ze nog kunt wisselen:** R2 en R4 (pootjes niet kort afknippen).
+Wordt in [Block 6](../../GUIDE.md#block-6-bench-test-with-power) te laag gemeten, dan worden ze
+150 Ω.
+
+**Niet solderen:** de ESP zelf. Soldeer twee female headers (1 × 15, raster 2,54 mm) en steek de
+ESP erin; prik de headers daarvoor eerst op de ESP, dan klopt de rij-afstand vanzelf. Die headers
+en eventueel 150 Ω (2×) en 2,2 kΩ (1×) staan niet op de onderdelenlijst van GUIDE.md.
+
+**Nog niet in de ketel:** de terminals pas in de Molex-stekker zetten na het meten van X5, en pas
+aansluiten als Block 5 en 6 goed zijn.
+
 ## Bankcontroles
 
 Uitgevoerd volgens [GUIDE.md § Block 5](../../GUIDE.md#block-5-checks-before-power) en

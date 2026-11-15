@@ -14,7 +14,9 @@ build works.
 the IDS protocol differs (no checksum, 32-byte replies). Read
 [docs/hre/hardware.md](./docs/hre/hardware.md) before connecting, and use
 [docs/hre/intergas-hre-probe.yaml](./docs/hre/intergas-hre-probe.yaml) instead of the Xtreme test
-below.
+below. There is a separate HRE wiring map, with the ESP32 on the board and the parts that wait
+for the X5 measurement marked:
+[adapter-perfboard-layout-hre.svg](./images/adapter-perfboard-layout-hre.svg) (Dutch labels).
 
 Nothing here is supported by Intergas. A wiring mistake on the boiler side can damage the
 boiler's control board, so take the checks seriously.
