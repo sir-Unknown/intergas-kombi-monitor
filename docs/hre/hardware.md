@@ -35,6 +35,13 @@ Waarschuwing van Meewis (Circuitsonline, 11-12-2021): "bij de manual van Interga
 omgedraaid". Labels "TX/RX" zijn dus niet eenduidig (ketel- of PC-perspectief). **Meten gaat vóór
 plaatjes.**
 
+![Pinout X5 met de vergrendeling links: V+ linksboven, GND linksonder, TX rechtsboven, RX rechtsonder](../../images/pinout-X5-hre.svg)
+
+**Gemeten (november 2026) op een HRE 28/24 A uit 2026:** met de vergrendeling links zit GND
+linksonder, in de kolom aan de vergrendelzijde. Dat past bij de regel en bij alle drie de bronnen
+hierboven. V+, TX en RX meten alle drie 3,3 V, dus alleen de positie wijst TX en RX aan; de
+[probe](./intergas-hre-probe.yaml) bevestigt ze.
+
 ## Signaalniveaus
 
 | Waarneming | Bron | Wat het zegt |
@@ -47,6 +54,7 @@ plaatjes.**
 | Branderautomaat bevat PIC18F4520, aanstuurbaar met MAX232 | Martin-B (CO, 2010) | 5 V-microcontroller op oude modellen |
 | MAX3232-module (RS-232-niveaus) gaf geen communicatie; PL2303 TTL wel | BAS_esp (CO, juni 2025) | X5 is TTL, geen RS-232 |
 | Zeer oude Kompakt HR (Furimat): 2400 baud 7E2, reageert niet op `S?` | EmielA (CO, januari 2022) | Niet relevant voor HRE A; wel een reden waarom een oude ketel niet antwoordt |
+| V+, TX en RX in rust elk 3,3 V t.o.v. GND, ketel in wachtstand | Eigen meting, HRE 28/24 A uit 2026 (november 2026) | Signalen 3,3 V; **V+ is ook 3,3 V**, niet de 5 V van de Xtreme en de oudere forumbronnen |
 
 Het installatievoorschrift (versie 2025) beschrijft de HRE ...A-modellen met modulerende A-pomp.
 Intergas levert IDS voor IC3 vanaf toestellen van 1 januari 2013 (Intergas IDS-productpagina).
@@ -145,7 +153,9 @@ aansluiten als Block 5 en 6 goed zijn.
 ## Bankcontroles
 
 Uitgevoerd volgens [GUIDE.md § Block 5](../../GUIDE.md#block-5-checks-before-power) en
-[§ Block 6](../../GUIDE.md#block-6-bench-test-with-power); samengevat:
+[§ Block 6](../../GUIDE.md#block-6-bench-test-with-power). Voed de ketelzijde in Block 6 met de
+spanning die op X5 V+ staat: **3,3 V** als V+ 3,3 V meet (zoals op de gemeten HRE 28/24 A), anders
+5 V. Samengevat:
 
 | Meting | Eis | Als het niet klopt |
 |---|---|---|
@@ -169,20 +179,36 @@ LED-stroom ≈ 9,3 mA (ruim onder 60 mA absoluut maximum). Hetzelfde geldt in de
 
 ## Meten op de ketel (vóór aansluiten)
 
+Meet met de ketel **in wachtstand, zonder warmtevraag**: kamerthermostaat en radiatorknoppen
+tijdelijk laag, tapcomfort uit, geen warm water tappen. Gebruik niet de stand "Uit": of X5 dan
+dezelfde spanning geeft, is niet bekend. Zet na het meten alles terug.
+
 1. Stekker van de ketel uit de wandcontactdoos; branderautomaat naar voren kantelen (§5.3).
 2. Ketel weer onder spanning. **Alleen op X5 meten**; X2 voert 230 V.
-3. Zoek **GND**: de pin waartegen de andere pinnen een positieve spanning hebben.
-4. De andere pin in dezelfde kolom is **V+** (verwacht ≈ 5 V).
-5. In de andere kolom: **TX** zit in dezelfde rij als V+, **RX** in dezelfde rij als GND.
-6. Meet TX in rust (ketel zendt alleen op verzoek, dus TX is in rust hoog):
+3. Multimeter op **DC V** (bereik 20 V). Zoek **GND**: zwarte pen op één pin, rode pen
+   achtereenvolgens op de andere drie. Zijn alle drie positief, dan is de pin onder de zwarte pen
+   GND; zo niet, zet de zwarte pen op de volgende pin. Gebruik niet de stroomstand (die sluit V+
+   kort) of de Ω-stand (niet op een pin onder spanning).
+4. GND hoort in de kolom aan de vergrendelzijde te zitten. Zo niet: stoppen, de ketel wijkt dan af
+   van alle bronnen.
+5. De andere pin in dezelfde kolom is **V+**.
+6. In de andere kolom: **TX** zit in dezelfde rij als V+, **RX** in dezelfde rij als GND. Meten
+   V+, TX en RX dezelfde spanning, dan wijst alleen de positie TX en RX aan. Verwisseld geeft geen
+   antwoord in de probe, maar door de optocouplers geen schade.
+7. Meet V+ en TX in rust (de ketel zendt alleen op verzoek, dus TX is in rust hoog):
 
-| TX in rust | Actie |
-|---|---|
-| ≈ 3,3 V | Adapter zoals gebouwd (draadbrug op U2 OUT) |
-| ≈ 5 V | U2-eind van de draadbrug van OUT naar IN. Dan R1 waarschijnlijk 2,2 kΩ; **op de bank controleren** (Block 6, nu met 5 V op de lijn) dat ketel-RX hoog ≥ 4 V wordt (Schmitt-trigger-ingang van een 5 V-microcontroller vraagt 0,8 × 5 V) voordat je aansluit |
-| iets anders / onstabiel | Niet aansluiten; eerst uitzoeken |
+| V+ | TX in rust | Actie |
+|---|---|---|
+| ≈ 5 V | ≈ 3,3 V | Adapter zoals gebouwd (draadbrug op U2 OUT); de situatie die de bronnen doen verwachten |
+| ≈ 3,3 V | ≈ 3,3 V | Adapter zoals gebouwd (draadbrug op U2 OUT, R1 1 kΩ); **gemeten op een HRE 28/24 A uit 2026**. U2 krijgt 3,3 V op IN en werkt in dropout; de ketelzijde krijgt dan ≈ 3,0–3,2 V (**afgeleid** uit de dropout van de LP2950 bij enkele mA, niet gemeten). Block 6 met 3,3 V. Haalt dat de 2,5 V niet: eerst R2/R4 naar 150 Ω; helpt dat niet, dan het U2-eind van de draadbrug naar IN, zodat de ketelzijde direct aan X5 V+ hangt (zoals bij Meewis en keesma) |
+| ≈ 5 V | ≈ 5 V | U2-eind van de draadbrug van OUT naar IN. Dan R1 waarschijnlijk 2,2 kΩ; **op de bank controleren** (Block 6, nu met 5 V op de lijn) dat ketel-RX hoog ≥ 4 V wordt (Schmitt-trigger-ingang van een 5 V-microcontroller vraagt 0,8 × 5 V) voordat je aansluit |
+| iets anders / onstabiel | | Niet aansluiten; eerst uitzoeken |
 
-7. Noteer het productiejaar van het typeplaatje (`******-jjmm`, installatievoorschrift p. 3).
+Een belastingstest op V+ is niet nodig: de community-adapters hieronder voeden hun ketelzijde ook
+uit X5 V+, en BAS_esp voedde een hele ESP uit de 3,3 V van X5. Het toelaatbare stroombudget blijft
+wel ongedocumenteerd (zie [Voeding](#voeding)).
+
+8. Noteer het productiejaar van het typeplaatje (`******-jjmm`, installatievoorschrift p. 3).
 
 ## Voeding
 
@@ -208,7 +234,7 @@ gemeten signaalniveau van X5.
 
 | Project | Ketel | Ketel-TX → ESP | ESP → ketel-RX | Voeding ketelzijde | ESP-voeding | Controller, pinnen |
 |---|---|---|---|---|---|---|
-| little-chef / deze repo ([GUIDE.md](../../GUIDE.md), zelfde onderdelen en schema) | — | BC337-emittervolger (C aan 3,3 V) → 220 Ω → 4N25; uitgang 1 kΩ naar GND | idem gespiegeld | LP2950-3.3 uit X5 +5 V | eigen USB | ESP32-WROOM-32 (NodeMCU-32S, of Joy-IT NodeMCU ESP32 USB-C), UART2 GPIO16/17 |
+| little-chef / deze repo ([GUIDE.md](../../GUIDE.md), zelfde onderdelen en schema) | — | BC337-emittervolger (C aan 3,3 V) → 220 Ω → 4N25; uitgang 1 kΩ naar GND | idem gespiegeld | LP2950-3.3 uit X5 V+ (op de gemeten HRE 28/24 A is V+ 3,3 V: U2 in dropout) | eigen USB | ESP32-WROOM-32 (NodeMCU-32S, of Joy-IT NodeMCU ESP32 USB-C), UART2 GPIO16/17 |
 | Meewis (`intergas-esp8266.pdf`) | IC3 | BC337-emittervolger, **collector aan X5 V+** → 220 Ω → 4N25; uitgang 1 kΩ | BC337-emittervolger aan 3,3 V → 220 Ω → 4N25; opto-collector aan **X5 V+**, 1 kΩ naar GND | geen regelaar: X5 V+ direct | LM117 → 3V3 uit een losse "+V"-voeding op ESP-massa; niet verbonden met X5 V+ of X5 GND (voeding zelf niet gespecificeerd) | ESP-01, UART0 |
 | Edwin Bontenbal (`InterGas.kicad_sch`, netlijst uitgelezen) | HRE IC2 | **Gemeenschappelijke emitter**: 68 kΩ basis, LED + 220 Ω aan 3,3 V; uitgang 470 Ω | idem gespiegeld | L78L33 uit X5 +5 V; 100 nF / 10 nF | jumpers J4/J5 verbinden GND en +5 V met X5 (README: "run paricitair on the boiler x5 PCB connector (without external power)") | Wemos D1 mini, SoftwareSerial D6 (TX) / D7 (RX) |
 | keesma (handschets + Wemos-schema) | Prestige CW6 | **Opto-LED direct uit ketel-TX** via 200–500 Ω; uitgang 1 kΩ | 220–500 Ω → LED; opto-collector aan X5 V+, 1 kΩ naar GND | X5 V+ direct | HiLink 3,3 V | ESP8266, SoftwareSerial GPIO4 (RX) / GPIO5 (TX) |
@@ -223,8 +249,10 @@ Wat hieruit volgt voor deze adapter:
   transistor ervoor en een 470 Ω–1 kΩ uitgangsweerstand. Op een CW6 (keesma) werkt de opto zonder
   transistor, rechtstreeks uit ketel-TX. Ketel-TX kan daar dus enkele mA leveren.
 - **Ketel-RX hoog = X5 V+ (≈ 5 V) bij Meewis en keesma.** Hun ketels accepteren dat. Dat 3,3 V ook
-  als hoog geldt, tonen Edwin (IC2, via opto) en BAS_esp (HReco, ESP direct op X5) aan; voor een
-  HRE A met IC3 is het niet gemeld. Daarom blijft de draadbrug uit
+  als hoog geldt, tonen Edwin (IC2, via opto) en BAS_esp (HReco, ESP direct op X5) aan. Op de
+  gemeten HRE 28/24 A uit 2026 staat ketel-RX in rust zelf op 3,3 V; dat die ketel 3,3 V als hoog
+  accepteert, is daarmee aannemelijk (**afgeleid**), maar nog niet met communicatie bevestigd.
+  Andere ketels kunnen 5 V hebben; daarom blijft de draadbrug uit
   [Voorbereiding bij het solderen](#voorbereiding-bij-het-solderen) nodig.
 - **Emittervolger of gemeenschappelijke emitter.** Edwin stuurt de LED met een schakelende
   transistor. Met 68 kΩ is de basisstroom ≈ (3,3 − 0,7) / 68 kΩ ≈ 38 µA. Een LED-stroom van ≈ 9 mA

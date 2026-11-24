@@ -16,7 +16,9 @@ the IDS protocol differs (no checksum, 32-byte replies). Read
 [docs/hre/intergas-hre-probe.yaml](./docs/hre/intergas-hre-probe.yaml) instead of the Xtreme test
 below. There is a separate HRE wiring map, with the ESP32 on the board and the parts that wait
 for the X5 measurement marked:
-[adapter-perfboard-layout-hre.svg](./images/adapter-perfboard-layout-hre.svg) (Dutch labels).
+[adapter-perfboard-layout-hre.svg](./images/adapter-perfboard-layout-hre.svg) (Dutch labels), and
+an X5 pinout with the levels measured on an HRE 28/24 A from 2026:
+[pinout-X5-hre.svg](./images/pinout-X5-hre.svg).
 
 Nothing here is supported by Intergas. A wiring mistake on the boiler side can damage the
 boiler's control board, so take the checks seriously.
@@ -154,8 +156,9 @@ Build and test in this order, so a mistake shows up early.
 - [ ] Place **U2 (LP2950)** near the left edge, flat face toward the bottom edge of the board, so
   its legs read OUT, GND, IN from left to right. Double-check before soldering: soldering it
   rotated puts 5 V on its output and it won't work (an easy mistake to make).
-- [ ] **HRE only (X5), read this before the next two steps.** It is not yet known whether X5 uses
-  3.3 V or 5 V signals, so build in a way that lets you switch later without rebuilding:
+- [ ] **HRE only (X5), read this before the next two steps.** X5 can use 3.3 V or 5 V signals
+  (an HRE 28/24 A from 2026 measured 3.3 V on V+, TX and RX; older boilers may differ), so build
+  in a way that lets you switch later without rebuilding:
   - connect C1 + **directly to the U2 OUT leg** underneath the board (bend the leg over), not to
     the 3.3 V wire;
   - make the connection from U2 OUT to the boiler 3.3 V wire a **separate short wire**, soldered
@@ -222,7 +225,8 @@ Build and test in this order, so a mistake shows up early.
 This checks that each optocoupler passes a clear high level, before anything touches the boiler.
 Feed 5 V into the boiler cable's **+5 V and GND** wires (see [Bench power](#bench-power)), and
 power the ESP32 from its own USB cable (no firmware needed). Disconnect the wire on ESP pin
-**17** for this test.
+**17** for this test. **HRE:** feed the voltage you measured on X5 V+ instead; on a boiler with
+3.3 V on V+ that is 3.3 V, so the test covers the lower supply.
 
 - [ ] Touch the **TX cable wire** (Q1 B) to the **boiler 3.3 V** wire. Measure **ESP pin 16**
   against ESP GND: it must read **at least 2.5 V**. Touch TX to **boiler GND** instead: about 0 V.
@@ -234,10 +238,11 @@ power the ESP32 from its own USB cable (no firmware needed). Disconnect the wire
 
 ## Bench power
 
-For the bench tests the boiler side needs 5 V on its +5 V and GND wires. Best is a second USB
-charger with an old USB cable cut open (red is +5 V, black is GND). If you don't have one, you
-can borrow 5V and GND from the ESP32's own pins with two jumper wires, **only on the bench**:
-remove them before the adapter goes near the boiler, because they bridge the isolation.
+For the bench tests the boiler side needs 5 V on its +5 V and GND wires (HRE with 3.3 V on X5 V+:
+3.3 V). Best is a second USB charger with an old USB cable cut open (red is +5 V, black is GND).
+If you don't have one, or you need 3.3 V, you can borrow 5V or 3V3 and GND from the ESP32's own
+pins with two jumper wires, **only on the bench**: remove them before the adapter goes near the
+boiler, because they bridge the isolation.
 
 ## The X14 plug
 
@@ -258,10 +263,14 @@ cable to the board: with the boiler on and the loose ends apart, +5 V to GND rea
 TX to GND about 3.3 V.
 
 **HRE (X5):** the same plug and housing. The rule that holds regardless of how you look at it:
-+5 V and GND sit in the column on the latch side, and TX is in the same row as +5 V. Do **not**
+V+ and GND sit in the column on the latch side, and TX is in the same row as V+. Do **not**
 rely on drawings for X5: identify the pins and the signal level by measuring, as described in
-[docs/hre/hardware.md](./docs/hre/hardware.md#meten-op-de-ketel-vóór-aansluiten). If TX reads
-about 5 V instead of 3.3 V, move the wire from block 1 before you connect.
+[docs/hre/hardware.md](./docs/hre/hardware.md#meten-op-de-ketel-vóór-aansluiten). An HRE 28/24 A
+from 2026 measured, latch on the left: GND bottom-left, V+ top-left, TX top-right, RX
+bottom-right, and **3.3 V** on V+, TX and RX
+([pinout-X5-hre.svg](./images/pinout-X5-hre.svg)). With 3.3 V on V+ the adapter stays as built
+(short wire on U2 OUT); if TX reads about 5 V instead, move the wire from block 1 before you
+connect.
 
 ## Software, step 1: a read-only test
 

@@ -12,14 +12,16 @@ Status (november 2026): fase 2 en 3 zijn gebouwd en compileren. De decoders zijn
 vergeleken met de originele IDS v1.83-bytecode en de poll-lus is gesimuleerd tegen een nagebootste
 ketel, zie [verificatie.md](./verificatie.md); **nog niet op een ketel geverifieerd**. De ketel van de gebruiker is van 2026 en dus nieuwer
 dan elke bron ([O20](./onzekerheden.md#o20-ketel-uit-2026-nieuwer-dan-alle-bronnen)); de eerste
-testronde bepaalt of hij hetzelfde protocol spreekt.
+testronde bepaalt of hij hetzelfde protocol spreekt. X5 op die ketel is gemeten: V+, TX en RX
+3,3 V, pinout volgens de regel ([hardware.md](./hardware.md#pinout)).
 
 ## Fase 0 — Hardware en eerste verbinding (gebruiker)
 
 | Stap | Klaar wanneer |
 |---|---|
 | Adapter bouwen ([hardware.md](./hardware.md#voorbereiding-bij-het-solderen)) | Bankcontroles gehaald (GPIO16 ≥ 2,5 V, geen doorgang tussen beide zijden) |
-| X5 meten ([hardware.md](./hardware.md#meten-op-de-ketel-vóór-aansluiten)) | GND, V+, TX, RX en TX-ruststand bekend; draadbrug op 3,3 V of 5 V gezet |
+| X5 meten ([hardware.md](./hardware.md#meten-op-de-ketel-vóór-aansluiten)) | GND, V+, TX, RX en ruststand van V+ en TX bekend; draadbrug op 3,3 V of 5 V gezet. **Gedaan** (november 2026): alles 3,3 V, draadbrug op U2 OUT |
+| Bankcontrole opnieuw met de gemeten V+ ([hardware.md](./hardware.md#bankcontroles)) | Block 6 met 3,3 V gehaald (GPIO16 en ketel-RX-draad ≥ 2,5 V) |
 | [intergas-hre-probe.yaml](./intergas-hre-probe.yaml) | Per commando een antwoord van 32 bytes (16 bij `B2` als die later wordt toegevoegd) in de log |
 
 ## Verificatie op de ketel

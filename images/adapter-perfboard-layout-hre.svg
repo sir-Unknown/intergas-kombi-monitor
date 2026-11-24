@@ -64,7 +64,7 @@
 
   <!-- boiler cable stubs -->
   <polyline class="w n5v stub" points="180,200 180,170"/>
-  <text x="184" y="190" class="lbl-b">+5V van ketel</text>
+  <text x="184" y="190" class="lbl-b">V+ van ketel</text>
   <polyline class="w ngnd stub" points="300,160 300,132"/>
   <text x="306" y="140" class="lbl-b">GND (ketel)</text>
   <polyline class="w ntx stub" points="240,100 240,36"/>
@@ -321,7 +321,7 @@
   <!-- legend -->
   <line x1="70" y1="832" x2="94" y2="832" class="w n3v3"/><text x="102" y="836" class="lbl">3,3 V (per kant eigen)</text>
   <line x1="275" y1="832" x2="299" y2="832" class="w ngnd"/><text x="307" y="836" class="lbl">GND (per kant eigen)</text>
-  <line x1="480" y1="832" x2="504" y2="832" class="w n5v"/><text x="512" y="836" class="lbl">+5 V van ketel</text>
+  <line x1="480" y1="832" x2="504" y2="832" class="w n5v"/><text x="512" y="836" class="lbl">V+ van ketel (X5)</text>
   <line x1="685" y1="832" x2="709" y2="832" class="w ntx"/><text x="717" y="836" class="lbl">ketel → ESP</text>
   <line x1="70" y1="856" x2="94" y2="856" class="w nsig"/><text x="102" y="860" class="lbl">GPIO16 / RX2</text>
   <line x1="275" y1="856" x2="299" y2="856" class="w nio17"/><text x="307" y="860" class="lbl">GPIO17 / TX2-pad</text>
@@ -340,11 +340,11 @@
   <!-- notes -->
   <text x="70" y="962" class="title">HRE: wat afwijkt van de gewone bouwtekening</text>
   <text x="70" y="984" class="note"><tspan class="note-b">Volgorde:</tspan> alles solderen behalve wat in een gele ring staat → X5 op de ketel meten →</text>
-  <text x="70" y="1002" class="note">het geel omringde solderen → Block 5 en 6 uit GUIDE.md → pas dan op de ketel aansluiten.</text>
+  <text x="70" y="1002" class="note">het geel omringde solderen → Block 5 en 6 uit GUIDE.md (gevoed met de gemeten V+) → pas dan aansluiten.</text>
   <text x="70" y="1026" class="note"><tspan class="note-b">1</tspan>  Losse draadbrug van U2 naar de 3,3 V-draad. Het U2-eind pas solderen na het meten van X5:</text>
-  <text x="70" y="1044" class="note">    aan OUT bij 3,3 V (getekend), aan IN bij 5 V (roze stippellijn).</text>
+  <text x="70" y="1044" class="note">    aan OUT bij 3,3 V (getekend; zo gemeten op een HRE 28/24 A uit 2026), aan IN bij 5 V (roze stippellijn).</text>
   <text x="70" y="1066" class="note"><tspan class="note-b">2</tspan>  C1 + rechtstreeks aan het OUT-pootje van U2 (pootje ombuigen), niet aan de 3,3 V-draad.</text>
-  <text x="70" y="1088" class="note"><tspan class="note-b">3</tspan>  R1 pas na het meten van X5: 1 kΩ bij 3,3 V; bij 5 V waarschijnlijk 2,2 kΩ (ketel-RX hoog moet ≥ 4 V).</text>
+  <text x="70" y="1088" class="note"><tspan class="note-b">3</tspan>  R1 pas na het meten van X5: 1 kΩ bij 3,3 V (getekend); bij 5 V waarschijnlijk 2,2 kΩ (ketel-RX hoog ≥ 4 V).</text>
   <text x="70" y="1110" class="note"><tspan class="note-b">4, 5</tspan>  R2 en R4 wel solderen, maar pootjes niet kort afknippen: meet Block 6 te laag, dan worden ze 150 Ω.</text>
   <text x="70" y="1132" class="note"><tspan class="note-b">6</tspan>  ESP niet solderen. Prik 2 female headers (1 × 15) op de ESP, zet het geheel in de print en soldeer alleen</text>
   <text x="70" y="1150" class="note">    de headers. Dan klopt de afstand tussen de rijen vanzelf. De ESP valt helemaal binnen de rand van de print.</text>

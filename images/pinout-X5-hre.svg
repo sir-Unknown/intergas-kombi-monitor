@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" width="760" height="430" role="img" aria-label="Pinout van connector X5 op de Intergas Kombi Kompakt HRE, met de vergrendeling links: linksboven V+, linksonder GND, rechtsboven TX (ketel zendt), rechtsonder RX (ketel ontvangt). Gemeten op een HRE 28/24 A uit 2026 in wachtstand: V+, TX en RX elk 3,3 V ten opzichte van GND.">
+  <style>
+    .t{font-family:Arial,Helvetica,sans-serif;fill:#1d2329}
+    .title{font-size:17px;font-weight:700}
+    .note{font-size:13px}
+    .note-b{font-size:13px;font-weight:700}
+    .pin{font-family:Menlo,Consolas,"DejaVu Sans Mono",monospace;font-size:15px;font-weight:700}
+    .volt{font-family:Menlo,Consolas,"DejaVu Sans Mono",monospace;font-size:11px;fill:#5d6670}
+    .housing{fill:#f3efe4;stroke:#2b2f33;stroke-width:2.5}
+    .latch{fill:#d9c29a;stroke:#2b2f33;stroke-width:2}
+    .cell{stroke-width:3}
+    .vplus{fill:#fde7cf;stroke:#c2410c} .gnd{fill:#e5e7eb;stroke:#1f2937}
+    .tx{fill:#dcfce7;stroke:#15803d} .rx{fill:#dbeafe;stroke:#1d4ed8}
+    .col{fill:none;stroke:#9a3412;stroke-width:1.5;stroke-dasharray:6 5}
+  </style>
+  <rect x="0" y="0" width="760" height="430" fill="#ffffff"/>
+  <text x="24" y="34" class="t title">X5 "Computer interface", vergrendeling links</text>
+
+  <!-- latch on the left of the housing -->
+  <text x="0" y="0" class="t note" text-anchor="middle" transform="translate(38,167) rotate(-90)">vergrendeling</text>
+  <rect x="80" y="62" width="340" height="210" rx="10" class="housing"/>
+  <!-- latch, drawn over the housing outline -->
+  <rect x="48" y="132" width="34" height="70" rx="4" class="latch"/>
+
+  <!-- latch-side column: V+ and GND -->
+  <rect x="98" y="74" width="148" height="186" rx="8" class="col"/>
+  <text x="172" y="292" class="t note" text-anchor="middle" style="fill:#9a3412">kolom aan de vergrendelzijde</text>
+
+  <rect x="110" y="86" width="124" height="76" rx="6" class="cell vplus"/>
+  <text x="172" y="118" class="pin" text-anchor="middle">V+</text>
+  <text x="172" y="140" class="volt" text-anchor="middle">3,3 V</text>
+
+  <rect x="110" y="172" width="124" height="76" rx="6" class="cell gnd"/>
+  <text x="172" y="204" class="pin" text-anchor="middle">GND</text>
+  <text x="172" y="226" class="volt" text-anchor="middle">0 V</text>
+
+  <rect x="270" y="86" width="136" height="76" rx="6" class="cell tx"/>
+  <text x="338" y="112" class="pin" text-anchor="middle">TX</text>
+  <text x="338" y="132" class="volt" text-anchor="middle">ketel zendt</text>
+  <text x="338" y="150" class="volt" text-anchor="middle">3,3 V in rust</text>
+
+  <rect x="270" y="172" width="136" height="76" rx="6" class="cell rx"/>
+  <text x="338" y="198" class="pin" text-anchor="middle">RX</text>
+  <text x="338" y="218" class="volt" text-anchor="middle">ketel ontvangt</text>
+  <text x="338" y="236" class="volt" text-anchor="middle">3,3 V in rust</text>
+
+  <!-- right-hand explanation -->
+  <text x="446" y="96" class="t note-b">Regel (geldt ook gespiegeld)</text>
+  <text x="446" y="118" class="t note">• V+ en GND: kolom aan de</text>
+  <text x="446" y="136" class="t note">   vergrendelzijde</text>
+  <text x="446" y="158" class="t note">• TX: zelfde rij als V+</text>
+  <text x="446" y="180" class="t note">• RX: zelfde rij als GND</text>
+  <text x="446" y="214" class="t note-b">Kijkrichting</text>
+  <text x="446" y="236" class="t note">Connector op de ketel, of de</text>
+  <text x="446" y="254" class="t note">stekker vanaf de draadzijde:</text>
+  <text x="446" y="272" class="t note">zelfde indeling.</text>
+
+  <text x="24" y="326" class="t note"><tspan class="note-b">Gemeten</tspan> op een HRE 28/24 A uit 2026: ketel in wachtstand, multimeter DC V t.o.v. GND.</text>
+  <text x="24" y="346" class="t note">V+, TX en RX meten hier alle drie 3,3 V: de positie bepaalt welke pin wat is.</text>
+  <text x="24" y="366" class="t note">Andere ketels kunnen afwijken (in de bronnen: V+ ≈ 5 V). Meet altijd zelf.</text>
+  <text x="24" y="386" class="t note">Pinnummers verschillen per bron; ga uit van de positie t.o.v. de vergrendeling.</text>
+  <text x="24" y="410" class="t note-b">Nooit meten op X2 (230 V). De ESP niet uit X5 voeden.</text>
+</svg>

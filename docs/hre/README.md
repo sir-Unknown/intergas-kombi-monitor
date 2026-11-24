@@ -13,7 +13,7 @@ Analysedatum: november 2026.
 | Onderwerp | Conclusie | Zekerheid |
 |---|---|---|
 | Xtreme-firmware op een HRE | **Niet gebruiken.** Ander protocol (checksum), andere commando's, andere byte-indeling, andere parameteradressen; schrijfacties komen op verkeerde parameters terecht. | Hoog (IDS-broncode vs. Xtreme-code) |
-| Adapter (GUIDE.md) | Schakeling is bruikbaar, mits de signaalspanning op X5 vooraf gemeten wordt. | Middel; meting nodig |
+| Adapter (GUIDE.md) | Schakeling is bruikbaar. X5 gemeten op een HRE 28/24 A uit 2026: V+, TX en RX 3,3 V; adapter zoals gebouwd, bankcontrole met 3,3 V. | Middel; communicatie nog niet getest |
 | Aansluiting | **X5** ("Computer interface") i.p.v. X14; zelfde Molex Mini-Fit Jr 2×2. | Hoog |
 | Protocol | IDS-protocol **zonder checksum**, 9600 8N1, 32-byte antwoorden. Volledig vastgesteld uit de officiële Intergas Diagnostic Software (IDS) v1.83. | Hoog |
 | Parameters | Alle installateursparameters uit de handleiding staan in `V?` (0–30) en `V1` (32–63), met namen uit IDS. | Hoog |

@@ -6,6 +6,7 @@ Betrouwbaarheidsklassen:
 - **Officieel document** — Intergas-handleiding of dealerdocument.
 - **Community-code** — werkende code van derden, vaak op één ketel getest.
 - **Forum** — waarneming of bewering van een gebruiker.
+- **Meting** — eigen meting met een multimeter op één ketel.
 
 ## Primaire bronnen
 
@@ -215,6 +216,19 @@ Betrouwbaarheidsklassen:
 | 24-1-2023 | thys | Kombi Kompakt **HR 28/24 uit 2006**. Antwoord op `S?\r` (9600 8N1) is **52 bytes** in plaats van 32; begint met `3f 00`, 24 voorbeeldregels met 10 s interval. IDS kan de data niet ontcijferen. Verwacht set-temperatuur 65 en een modus die wisselt tussen 1 en 5. Geen oplossing in het topic. Noemt B13, B14, B15, B9 en B16. |
 
 Gevolg: een ketel die op `S?` 52 bytes teruggeeft is geen HRE met IC2/IC3 en valt buiten het protocol van deze analyse (zie [O19](./onzekerheden.md#o19-oudere-hr-ketels-met-een-ander-antwoordformaat)). De firmware verwerpt zo'n antwoord met een lengtewaarschuwing.
+
+## Metingen
+
+### M1 X5 op een Kombi Kompakt HRE 28/24 A (bouwjaar 2026)
+
+- **Klasse:** meting (november 2026), één ketel, multimeter DC V, ketel in wachtstand zonder
+  warmtevraag.
+- **Resultaat:** met de vergrendeling links zit GND linksonder; V+ (linksboven), TX (rechtsboven)
+  en RX (rechtsonder) meten elk 3,3 V t.o.v. GND. TX en RX zijn op positie toegewezen, nog niet
+  met communicatie bevestigd.
+- **Gebruikt in:** [hardware.md](./hardware.md#pinout) (pinout, signaalniveaus, meten op de ketel),
+  [images/pinout-X5-hre.svg](../../images/pinout-X5-hre.svg),
+  [onzekerheden.md](./onzekerheden.md) O2 en O3.
 
 ## Datasheets
 

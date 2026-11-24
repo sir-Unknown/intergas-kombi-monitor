@@ -28,6 +28,9 @@ bedrijfscode → label.
 - **Impact:** hoog — verkeerd niveau geeft geen communicatie of, bij 5 V op een 3,3 V-ingang,
   mogelijk schade.
 - **Verifiëren:** meten volgens [hardware.md](./hardware.md#meten-op-de-ketel-vóór-aansluiten).
+- **Status (november 2026):** gemeten op één HRE 28/24 A uit 2026: TX, RX én V+ in rust 3,3 V.
+  Het niveau is daarmee bekend voor die ketel; dat de ketel 3,3 V op RX als hoog leest, is nog
+  niet met communicatie bevestigd. Andere (oudere) ketels kunnen 5 V hebben.
 
 ## O3 Pinout-oriëntatie
 
@@ -37,6 +40,9 @@ bedrijfscode → label.
 - **Impact:** hoog (V+/GND verwisselen).
 - **Verifiëren:** meten; de regel "V+ en GND in de kolom aan de vergrendelzijde, TX in de rij van
   V+" blijft geldig bij spiegeling.
+- **Status (november 2026):** op de gemeten HRE 28/24 A zit GND linksonder met de vergrendeling
+  links, zoals de regel voorspelt ([pinout](./hardware.md#pinout)). Omdat V+, TX en RX alle drie
+  3,3 V meten, zijn TX en RX alleen op positie bepaald; de probe moet ze bevestigen.
 
 ## O4 Statusbits die IDS niet decodeert
 
