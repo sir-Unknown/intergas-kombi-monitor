@@ -16,8 +16,10 @@ the IDS protocol differs (no checksum, 32-byte replies). Read
 [docs/hre/intergas-hre-probe.yaml](./docs/hre/intergas-hre-probe.yaml) instead of the Xtreme test
 below. There is a separate HRE wiring map, with the ESP32 on the board and the parts that wait
 for the X5 measurement marked:
-[adapter-perfboard-layout-hre.svg](./images/adapter-perfboard-layout-hre.svg) (Dutch labels), and
-an X5 pinout with the levels measured on an HRE 28/24 A from 2026:
+[adapter-perfboard-layout-hre.svg](./images/adapter-perfboard-layout-hre.svg) (Dutch labels). For a
+boiler that measures 3.3 V on X5 V+, TX and RX there is a finished version without those choices:
+[adapter-perfboard-layout-hre-3v3.svg](./images/adapter-perfboard-layout-hre-3v3.svg). The X5
+pinout with the levels measured on an HRE 28/24 A from 2026:
 [pinout-X5-hre.svg](./images/pinout-X5-hre.svg).
 
 Nothing here is supported by Intergas. A wiring mistake on the boiler side can damage the

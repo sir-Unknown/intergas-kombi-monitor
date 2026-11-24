@@ -81,6 +81,11 @@ Verder ongewijzigd: U1/U3 4N25, Q1/Q2 BC337, R2/R4 220 Ω, R1/R3 1 kΩ, C1 22 µ
 
 ![Bouwtekening HRE-adapter met ESP32 op female headers en drie NTC-ingangen](../../images/adapter-perfboard-layout-hre.svg)
 
+Deze tekening is algemeen: wat van de X5-meting afhangt staat in een gele ring. Meet X5 3,3 V op
+V+, TX en RX (zoals op de gemeten HRE 28/24 A uit 2026), gebruik dan de uitgewerkte versie
+zonder keuzes: [adapter-perfboard-layout-hre-3v3.svg](../../images/adapter-perfboard-layout-hre-3v3.svg)
+(draadbrug op U2 OUT, R1 1 kΩ, Block 6 met 3,3 V).
+
 Zelfde print en plaatsing als de [wiring map](../../GUIDE.md#wiring-map) uit GUIDE.md, met de
 HRE-stappen erin, de Joy-IT NodeMCU ESP32 (USB-C) plat op het board in plaats van losse
 Dupont-draden, en drie optionele NTC-ingangen. Het board is verdeeld in vier kwadranten:
